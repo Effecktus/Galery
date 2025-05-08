@@ -1,0 +1,42 @@
+# Переменные окружения
+.env
+.env.local
+.env.development
+.env.production
+
+# Зависимости Node.js
+node_modules/
+
+# Логи
+*.log
+
+# Временные файлы
+*.cache
+*.swp
+*.tmp
+
+# Файлы IDE и редакторов
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Локальные базы данных и SQL-дампы
+*.SQL
+
+# Кэш пакетных менеджеров
+.pnpm-store/
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Файлы сборки и артефакты
+*.pid
+*.seed
+*.pid.lock
+
+# Прочие временные файлы
+*.bak
+*.gho
+*.orig
+*.tmp

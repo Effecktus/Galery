@@ -4,11 +4,11 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME || 'galerydb',
-  process.env.DB_USER || 'root',
-  process.env.DB_PASSWORD || '1926112066@gmail.com',
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
   {
-    host: process.env.DB_HOST || 'localhost',
+    host: process.env.DB_HOST,
     dialect: 'mysql',
     logging: false, // Set to console.log to see SQL queries
     pool: {
@@ -19,5 +19,15 @@ const sequelize = new Sequelize(
     }
   }
 );
+
+// Проверка подключения к базе данных
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log('Соединение с базой данных успешно установлено');
+  })
+  .catch((err) => {
+    console.error('Ошибка подключения к базе данных:', err.message);
+  });
 
 module.exports = sequelize; 

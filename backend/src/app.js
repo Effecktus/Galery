@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const sequelize = require('./config/database');
 
 // Load environment variables
 dotenv.config();
@@ -26,7 +27,8 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`http://localhost:${PORT}`);
 }); 

@@ -1,16 +1,25 @@
 const { Sequelize } = require('sequelize');
 const dotenv = require('dotenv');
+const path = require('path');
 
-dotenv.config();
+// Загружаем переменные окружения из .env файла
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
+// Получаем параметры подключения из переменных окружения
+const dbName = process.env.DB_NAME || 'galerydb';
+const dbUser = process.env.DB_USER || 'root';
+const dbPassword = process.env.DB_PASSWORD || '';
+const dbHost = process.env.DB_HOST || 'localhost';
+
+// Создаем экземпляр Sequelize
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
+  dbName,
+  dbUser,
+  dbPassword,
   {
-    host: process.env.DB_HOST,
+    host: dbHost,
     dialect: 'mysql',
-    logging: false, // Set to console.log to see SQL queries
+    logging: process.env.NODE_ENV === 'test' ? false : console.log,
     pool: {
       max: 5,
       min: 0,

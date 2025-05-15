@@ -1,29 +1,64 @@
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+
+// Функция для создания JWT токена
+const signToken = (userId) => {
+  return jwt.sign(
+    { id: userId },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+  );
+};
+
+// Функция для отправки ответа с токеном
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user.id);
+  
+  // Удаляем пароль из ответа
+  user.password = undefined;
+
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user
+    }
+  });
+};
 
 // Регистрация нового пользователя
 exports.signup = async (req, res) => {
   try {
+    // Проверяем наличие обязательных полей
+    const { surname, first_name, patronymic, email, password, role } = req.body;
+    
+    if (!surname || !first_name || !email || !password) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please provide all required fields'
+      });
+    }
+    
+    // Проверяем, существует ли уже пользователь с таким email
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Email already in use'
+      });
+    }
+
     const newUser = await User.create({
-      surname: req.body.surname,
-      first_name: req.body.first_name,
-      patronymic: req.body.patronymic,
-      email: req.body.email,
-      password: req.body.password,
-      role: req.body.role || 'user'
+      surname,
+      first_name,
+      patronymic: patronymic || '',
+      email,
+      password,
+      role: role || 'user'
     });
 
-    // Удаляем пароль из ответа
-    newUser.password = undefined;
-
-    // Сохраняем ID пользователя в сессии
-    req.session.userId = newUser.id;
-
-    res.status(201).json({
-      status: 'success',
-      data: {
-        user: newUser
-      }
-    });
+    // Создаем и отправляем токен
+    createSendToken(newUser, 201, res);
   } catch (err) {
     res.status(400).json({
       status: 'error',
@@ -47,19 +82,39 @@ exports.login = async (req, res) => {
 
     // 2) Проверяем, существует ли пользователь и правильный ли пароль
     const user = await User.findOne({ where: { email } });
-    if (!user || !(await user.checkPassword(password))) {
+    
+    if (!user) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Incorrect email or password'
+      });
+    }
+    
+    const isPasswordCorrect = await user.checkPassword(password);
+    
+    if (!isPasswordCorrect) {
       return res.status(401).json({
         status: 'error',
         message: 'Incorrect email or password'
       });
     }
 
-    // 3) Сохраняем ID пользователя в сессии
-    req.session.userId = user.id;
+    // 3) Создаем и отправляем токен
+    createSendToken(user, 200, res);
+  } catch (err) {
+    res.status(400).json({
+      status: 'error',
+      message: err.message
+    });
+  }
+};
 
-    // 4) Удаляем пароль из ответа
-    user.password = undefined;
-
+// Получение данных текущего пользователя
+exports.getMe = async (req, res) => {
+  try {
+    // Информация о пользователе доступна из middleware защиты маршрута
+    const user = req.user;
+    
     res.status(200).json({
       status: 'success',
       data: {
@@ -72,20 +127,4 @@ exports.login = async (req, res) => {
       message: err.message
     });
   }
-};
-
-// Выход пользователя
-exports.logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({
-        status: 'error',
-        message: 'Error logging out'
-      });
-    }
-    res.status(200).json({
-      status: 'success',
-      message: 'Successfully logged out'
-    });
-  });
 }; 

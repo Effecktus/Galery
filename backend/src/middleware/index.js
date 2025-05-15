@@ -8,7 +8,7 @@ const authorValidation = require('./authorValidation');
 const userValidation = require('./userValidation');
 
 // Middleware для проверки результатов валидации
-exports.validate = (req, res, next) => {
+const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -22,8 +22,10 @@ exports.validate = (req, res, next) => {
   next();
 };
 
-// Экспортируем все валидации
+// Экспортируем все валидации и функцию validate
 module.exports = {
+  validate,
+  validateAuth: userValidation.validateAuth,
   ...ticketValidation,
   ...exhibitionValidation,
   ...styleValidation,

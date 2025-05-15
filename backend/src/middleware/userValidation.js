@@ -1,6 +1,18 @@
 const { body, param } = require('express-validator');
 const User = require('../models/User');
 
+// Валидация для аутентификации
+exports.validateAuth = [
+  body('email')
+    .trim()
+    .notEmpty().withMessage('Email обязателен')
+    .isEmail().withMessage('Неверный формат email')
+    .normalizeEmail(),
+  body('password')
+    .trim()
+    .notEmpty().withMessage('Пароль обязателен')
+];
+
 // Валидация для создания и обновления пользователя
 exports.validateUser = [
   body('surname')

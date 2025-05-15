@@ -24,9 +24,9 @@ const User = sequelize.define('User', {
   },
   patronymic: {
     type: DataTypes.STRING(50),
-    allowNull: false,
+    allowNull: true,
     validate: {
-      notEmpty: true
+      notEmpty: false
     }
   },
   email: {
@@ -68,8 +68,8 @@ const User = sequelize.define('User', {
 });
 
 // Метод для проверки пароля
-User.prototype.checkPassword = async function(password) {
-  return await bcrypt.compare(password, this.password);
+User.prototype.checkPassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
 };
 
 module.exports = User; 

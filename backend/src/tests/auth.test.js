@@ -1,201 +1,176 @@
-const chai = require('chai');
-const chaiHttp = require('chai-http');
+const assert = require('assert');
+const request = require('supertest');
 const app = require('../app');
-const User = require('../models/User');
-const sequelize = require('../config/database');
+const jwt = require('jsonwebtoken');
+const { User } = require('../models');
+const { clearDatabase, createTestUser } = require('./testUtils');
 
-const { expect } = chai;
-chai.use(chaiHttp);
+// Используем JWT_SECRET из .env
+const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
 
+/**
+ * Тесты для API аутентификации
+ */
 describe('Auth Tests', () => {
   // Перед каждым тестом очищаем базу данных
   beforeEach(async () => {
-    // Отключаем проверку внешних ключей
-    await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
-
-    // Очищаем все таблицы
-    await sequelize.query('TRUNCATE TABLE tickets');
-    await sequelize.query('TRUNCATE TABLE artworks');
-    await sequelize.query('TRUNCATE TABLE exhibitions');
-    await sequelize.query('TRUNCATE TABLE authors');
-    await sequelize.query('TRUNCATE TABLE styles');
-    await sequelize.query('TRUNCATE TABLE genres');
-    await sequelize.query('TRUNCATE TABLE users');
-
-    // Включаем проверку внешних ключей обратно
-    await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+    await clearDatabase();
   });
 
-  // После всех тестов закрываем соединение с базой данных
-  after(async () => {
-    await sequelize.close();
-  });
-
-  describe('POST /api/auth/signup', () => {
-    it('should register a new user', async () => {
-      const res = await chai
-        .request(app)
-        .post('/api/auth/signup')
-        .send({
-          surname: 'Иванов',
-          first_name: 'Иван',
-          patronymic: 'Иванович',
-          email: 'ivan@example.com',
-          password: 'password123',
-          role: 'user'
-        });
-
-      expect(res).to.have.status(201);
-      expect(res.body).to.have.property('status', 'success');
-      expect(res.body.data.user).to.have.property('email', 'ivan@example.com');
-      expect(res.body.data.user).to.not.have.property('password');
-    });
-
-    it('should not register user with existing email', async () => {
-      // Сначала создаем пользователя
-      await User.create({
+  /**
+   * Тесты для регистрации пользователя
+   */
+  describe('POST /api/v1/auth/signup', () => {
+    const testEmail = 'ivan@example.com';
+    const testPassword = 'Password123!';
+    
+    it('should register a new user and return JWT token', async () => {
+      // Arrange
+      const userData = {
         surname: 'Иванов',
         first_name: 'Иван',
         patronymic: 'Иванович',
-        email: 'ivan@example.com',
-        password: 'password123',
+        email: testEmail,
+        password: testPassword,
         role: 'user'
-      });
+      };
 
-      // Пытаемся создать пользователя с тем же email
-      const res = await chai
-        .request(app)
-        .post('/api/auth/signup')
+      // Act
+      const res = await request(app)
+        .post('/api/v1/auth/signup')
+        .send(userData);
+
+      // Assert
+      assert.strictEqual(res.status, 201);
+      assert.strictEqual(res.body.status, 'success');
+      assert.strictEqual(res.body.data.user.email, testEmail);
+      assert.strictEqual(res.body.data.user.password, undefined);
+      assert.ok(res.body.token, 'JWT token should be present');
+      
+      // Проверяем, что токен валидный
+      const decoded = jwt.verify(res.body.token, JWT_SECRET);
+      assert.strictEqual(decoded.id, res.body.data.user.id);
+    });
+
+    it('should not register user with existing email', async () => {
+      // Arrange
+      await createTestUser({ email: testEmail, password: testPassword });
+
+      // Act
+      const res = await request(app)
+        .post('/api/v1/auth/signup')
         .send({
           surname: 'Петров',
           first_name: 'Петр',
           patronymic: 'Петрович',
-          email: 'ivan@example.com',
-          password: 'password123',
+          email: testEmail,
+          password: testPassword,
           role: 'user'
         });
 
-      expect(res).to.have.status(400);
+      // Assert
+      assert.strictEqual(res.status, 400);
     });
   });
 
-  describe('POST /api/auth/login', () => {
+  /**
+   * Тесты для входа пользователя
+   */
+  describe('POST /api/v1/auth/login', () => {
+    const testEmail = 'ivan@example.com';
+    const testPassword = 'Password123!';
+    
     beforeEach(async () => {
-      // Создаем пользователя для тестов входа
-      await User.create({
-        surname: 'Иванов',
-        first_name: 'Иван',
-        patronymic: 'Иванович',
-        email: 'ivan@example.com',
-        password: 'password123',
-        role: 'user'
-      });
+      // Создаем тестового пользователя перед каждым тестом
+      await createTestUser({ email: testEmail, password: testPassword });
     });
 
-    it('should login with correct credentials', async () => {
-      const res = await chai
-        .request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'ivan@example.com',
-          password: 'password123'
-        });
+    it('should login with correct credentials and return JWT token', async () => {
+      // Arrange
+      const loginData = {
+        email: testEmail,
+        password: testPassword
+      };
 
-      expect(res).to.have.status(200);
-      expect(res.body).to.have.property('status', 'success');
-      expect(res.body.data.user).to.have.property('email', 'ivan@example.com');
-      expect(res.body.data.user).to.not.have.property('password');
+      // Act
+      const res = await request(app)
+        .post('/api/v1/auth/login')
+        .send(loginData);
+
+      // Assert
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body.status, 'success');
+      assert.strictEqual(res.body.data.user.email, testEmail);
+      assert.strictEqual(res.body.data.user.password, undefined);
+      assert.ok(res.body.token, 'JWT token should be present');
+      
+      // Проверяем, что токен валидный
+      const decoded = jwt.verify(res.body.token, JWT_SECRET);
+      assert.strictEqual(decoded.id, res.body.data.user.id);
     });
 
     it('should not login with incorrect password', async () => {
-      const res = await chai
-        .request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'ivan@example.com',
-          password: 'wrongpassword'
-        });
+      // Arrange
+      const loginData = {
+        email: testEmail,
+        password: 'wrongpassword'
+      };
 
-      expect(res).to.have.status(401);
+      // Act
+      const res = await request(app)
+        .post('/api/v1/auth/login')
+        .send(loginData);
+
+      // Assert
+      assert.strictEqual(res.status, 401);
     });
   });
 
-  describe('GET /api/auth/me', () => {
-    let agent;
+  /**
+   * Тесты для получения данных текущего пользователя
+   */
+  describe('GET /api/v1/auth/me', () => {
+    let token;
+    let userId;
+    const testEmail = 'ivan@example.com';
+    const testPassword = 'Password123!';
 
     beforeEach(async () => {
-      // Создаем пользователя
-      await User.create({
-        surname: 'Иванов',
-        first_name: 'Иван',
-        patronymic: 'Иванович',
-        email: 'ivan@example.com',
-        password: 'password123',
-        role: 'user'
-      });
-
-      // Создаем агент для сохранения cookies
-      agent = chai.request.agent(app);
-
-      // Логинимся
-      await agent
-        .post('/api/auth/login')
-        .send({
-          email: 'ivan@example.com',
-          password: 'password123'
-        });
+      // Создаем тестового пользователя и генерируем JWT токен
+      const user = await createTestUser({ email: testEmail, password: testPassword });
+      userId = user.id;
+      token = jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: '1h' });
     });
 
-    it('should get current user info when logged in', async () => {
-      const res = await agent.get('/api/auth/me');
+    it('should get current user info with valid JWT token', async () => {
+      // Act
+      const res = await request(app)
+        .get('/api/v1/auth/me')
+        .set('Authorization', `Bearer ${token}`);
 
-      expect(res).to.have.status(200);
-      expect(res.body).to.have.property('status', 'success');
-      expect(res.body.data.user).to.have.property('email', 'ivan@example.com');
+      // Assert
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body.status, 'success');
+      assert.strictEqual(res.body.data.user.email, testEmail);
     });
 
-    it('should not get user info when not logged in', async () => {
-      const res = await chai.request(app).get('/api/auth/me');
+    it('should not get user info without JWT token', async () => {
+      // Act
+      const res = await request(app)
+        .get('/api/v1/auth/me');
 
-      expect(res).to.have.status(401);
+      // Assert
+      assert.strictEqual(res.status, 401);
     });
-  });
+    
+    it('should not get user info with invalid JWT token', async () => {
+      // Act
+      const res = await request(app)
+        .get('/api/v1/auth/me')
+        .set('Authorization', 'Bearer invalid-token');
 
-  describe('POST /api/auth/logout', () => {
-    let agent;
-
-    beforeEach(async () => {
-      // Создаем пользователя
-      await User.create({
-        surname: 'Иванов',
-        first_name: 'Иван',
-        patronymic: 'Иванович',
-        email: 'ivan@example.com',
-        password: 'password123',
-        role: 'user'
-      });
-
-      // Создаем агент для сохранения cookies
-      agent = chai.request.agent(app);
-
-      // Логинимся
-      await agent
-        .post('/api/auth/login')
-        .send({
-          email: 'ivan@example.com',
-          password: 'password123'
-        });
-    });
-
-    it('should logout successfully', async () => {
-      const res = await agent.post('/api/auth/logout');
-
-      expect(res).to.have.status(200);
-      expect(res.body).to.have.property('status', 'success');
-
-      // Проверяем, что после выхода нельзя получить информацию о пользователе
-      const meRes = await agent.get('/api/auth/me');
-      expect(meRes).to.have.status(401);
+      // Assert
+      assert.strictEqual(res.status, 401);
     });
   });
 }); 

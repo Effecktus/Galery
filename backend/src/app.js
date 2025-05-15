@@ -1,40 +1,30 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const session = require('express-session');
+const path = require('path');
 const sequelize = require('./config/database');
 const routes = require('./routes');
 
-// Load environment variables
-dotenv.config();
+// Загружаем переменные окружения из .env файла
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-// Create Express app
+// Создаем экземпляр Express
 const app = express();
 
-// Middleware
+// Настройка CORS
 app.use(cors({
-  origin: 'http://localhost:3000', // URL вашего фронтенда
-  credentials: true // Важно для работы с сессиями
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
 }));
+
+// Middleware для парсинга запросов
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Настройка сессий
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production', // Использовать secure cookies в production
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 часа
-  }
-}));
-
-// Routes
+// Подключаем маршруты
 app.use(routes);
 
-// Error handling middleware
+// Middleware для обработки ошибок
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -43,7 +33,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server only if this file is run directly
+// Запускаем сервер только если файл запущен напрямую
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {

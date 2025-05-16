@@ -5,15 +5,23 @@ const sequelize = require('../config/database');
 
 // Создание нового билета
 exports.createTicket = async (req, res) => {
-  const transaction = await sequelize.transaction();
+  let transaction;
   
   try {
+    transaction = await sequelize.transaction();
+    
     const { exhibition_id, quantity } = req.body;
     
+    if (!exhibition_id || !quantity) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Необходимо указать exhibition_id и quantity'
+      });
+    }
+
     // Проверяем доступность выставки
     const exhibition = await Exhibition.findByPk(exhibition_id, { transaction });
     if (!exhibition) {
-      await transaction.rollback();
       return res.status(404).json({
         status: 'error',
         message: 'Выставка не найдена'
@@ -22,7 +30,6 @@ exports.createTicket = async (req, res) => {
 
     // Проверяем статус выставки
     if (exhibition.status !== 'active') {
-      await transaction.rollback();
       return res.status(400).json({
         status: 'error',
         message: 'Нельзя купить билет на неактивную выставку'
@@ -30,8 +37,8 @@ exports.createTicket = async (req, res) => {
     }
 
     // Проверяем дату выставки
-    if (new Date(exhibition.start_date) < new Date()) {
-      await transaction.rollback();
+    const now = new Date();
+    if (new Date(exhibition.end_date) < now) {
       return res.status(400).json({
         status: 'error',
         message: 'Нельзя купить билет на прошедшую выставку'
@@ -40,7 +47,6 @@ exports.createTicket = async (req, res) => {
 
     // Проверяем наличие билетов
     if (exhibition.remaining_tickets < quantity) {
-      await transaction.rollback();
       return res.status(400).json({
         status: 'error',
         message: 'Недостаточно билетов'
@@ -63,15 +69,15 @@ exports.createTicket = async (req, res) => {
 
     await transaction.commit();
 
-    res.status(201).json({
+    return res.status(201).json({
       status: 'success',
       data: {
         ticket
       }
     });
   } catch (err) {
-    await transaction.rollback();
-    res.status(400).json({
+    if (transaction) await transaction.rollback();
+    return res.status(500).json({
       status: 'error',
       message: err.message
     });
@@ -81,11 +87,22 @@ exports.createTicket = async (req, res) => {
 // Получение всех билетов (только для админов)
 exports.getAllTickets = async (req, res) => {
   try {
+    // Проверяем роль пользователя
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Доступ запрещен'
+      });
+    }
+
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
     const offset = (page - 1) * limit;
 
     const where = {};
+    if (req.query.exhibition_id) {
+      where.exhibition_id = req.query.exhibition_id;
+    }
     if (req.query.booking_date) {
       where.booking_date = {
         [Op.between]: [
@@ -144,9 +161,16 @@ exports.getUserTickets = async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 10;
     const offset = (page - 1) * limit;
 
-    const where = {
-      user_id: req.user.id
-    };
+    const where = {};
+    
+    // Если пользователь не админ, показываем только его билеты
+    if (req.user.role !== 'admin') {
+      where.user_id = req.user.id;
+    }
+
+    if (req.query.exhibition_id) {
+      where.exhibition_id = req.query.exhibition_id;
+    }
 
     if (req.query.booking_date) {
       where.booking_date = {
@@ -205,11 +229,12 @@ exports.getTicket = async (req, res) => {
       });
     }
 
-    // Проверяем, принадлежит ли билет пользователю
+    // Проверяем права доступа (только владелец или админ)
     if (ticket.user_id !== req.user.id && req.user.role !== 'admin') {
+      console.log(`Доступ запрещен: user_id=${ticket.user_id}, req.user.id=${req.user.id}, role=${req.user.role}`);
       return res.status(403).json({
         status: 'error',
-        message: 'Нет доступа к этому билету'
+        message: 'Доступ запрещен'
       });
     }
 
@@ -219,21 +244,25 @@ exports.getTicket = async (req, res) => {
         ticket
       }
     });
-  } catch (err) {
+  } catch (error) {
+    console.error('Ошибка при получении билета:', error);
     res.status(500).json({
       status: 'error',
-      message: err.message
+      message: 'Ошибка при получении билета',
+      error: error.message
     });
   }
 };
 
 // Отмена билета
 exports.cancelTicket = async (req, res) => {
-  const transaction = await sequelize.transaction();
+  let transaction;
   
   try {
+    transaction = await sequelize.transaction();
+    
     const ticket = await Ticket.findByPk(req.params.id, { transaction });
-
+    
     if (!ticket) {
       await transaction.rollback();
       return res.status(404).json({
@@ -242,47 +271,61 @@ exports.cancelTicket = async (req, res) => {
       });
     }
 
-    // Проверяем, принадлежит ли билет пользователю
+    // Проверяем права доступа (только владелец или админ)
     if (ticket.user_id !== req.user.id && req.user.role !== 'admin') {
       await transaction.rollback();
       return res.status(403).json({
         status: 'error',
-        message: 'Нет доступа к этому билету'
+        message: 'Доступ запрещен'
       });
     }
 
-    // Проверяем, можно ли отменить билет (например, не позже чем за 24 часа)
-    const bookingDate = new Date(ticket.booking_date);
-    const now = new Date();
-    const hoursSinceBooking = (now - bookingDate) / (1000 * 60 * 60);
+    // Получаем информацию о выставке
+    const exhibition = await Exhibition.findByPk(ticket.exhibition_id, { transaction });
+    
+    if (!exhibition) {
+      await transaction.rollback();
+      return res.status(404).json({
+        status: 'error',
+        message: 'Выставка не найдена'
+      });
+    }
 
-    if (hoursSinceBooking > 24) {
+    // Проверяем статус выставки
+    if (exhibition.status === 'completed') {
       await transaction.rollback();
       return res.status(400).json({
         status: 'error',
-        message: 'Билет можно отменить только в течение 24 часов после бронирования'
+        message: 'Нельзя отменить билет на завершенную выставку'
       });
     }
 
-    // Возвращаем билеты в общее количество
-    const exhibition = await Exhibition.findByPk(ticket.exhibition_id, { transaction });
-    await exhibition.update({
-      remaining_tickets: exhibition.remaining_tickets + ticket.quantity
-    }, { transaction });
+    // Обновляем количество билетов напрямую в базе данных, чтобы пропустить валидацию модели
+    await sequelize.query(
+      'UPDATE Exhibitions SET remaining_tickets = remaining_tickets + ? WHERE id = ?',
+      {
+        replacements: [ticket.quantity, exhibition.id],
+        type: sequelize.QueryTypes.UPDATE,
+        transaction
+      }
+    );
 
     // Удаляем билет
     await ticket.destroy({ transaction });
+
     await transaction.commit();
 
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       message: 'Билет успешно отменен'
     });
-  } catch (err) {
-    await transaction.rollback();
-    res.status(500).json({
+  } catch (error) {
+    if (transaction) await transaction.rollback();
+    console.error('Ошибка при отмене билета:', error);
+    return res.status(500).json({
       status: 'error',
-      message: err.message
+      message: 'Ошибка при отмене билета',
+      error: error.message
     });
   }
-}; 
+};

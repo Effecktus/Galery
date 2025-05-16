@@ -29,15 +29,9 @@ router.use(limiter);
 router.use(protect);
 router.use(logRequest);
 
-// Маршруты для обычных пользователей
-router.get('/my', ticketController.getUserTickets);
-router.get('/my/:id', validateTicketId, validate, ticketController.getTicket);
+// Маршруты для всех аутентифицированных пользователей
 router.post('/', validateTicket, validate, ticketController.createTicket);
-router.delete('/my/:id', validateTicketId, validate, ticketController.cancelTicket);
-
-// Маршруты только для админов и менеджеров
-router.use(restrictTo('admin', 'manager'));
-router.get('/', ticketController.getAllTickets);
+router.get('/', ticketController.getUserTickets); // Для обычных пользователей покажет только их билеты
 router.get('/:id', validateTicketId, validate, ticketController.getTicket);
 router.delete('/:id', validateTicketId, validate, ticketController.cancelTicket);
 

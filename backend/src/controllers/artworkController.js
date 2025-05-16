@@ -109,16 +109,21 @@ exports.getArtwork = async (req, res) => {
 // Обновление произведения искусства по ID
 exports.updateArtwork = async (req, res) => {
   try {
-    const [updated] = await Artwork.update(req.body, {
-      where: { id: req.params.id },
-      returning: true
-    });
-    if (updated[0] === 0) {
+    // Проверяем, существует ли произведение искусства
+    const artwork = await Artwork.findByPk(req.params.id);
+    if (!artwork) {
       return res.status(404).json({
         status: 'error',
         message: 'Произведение искусства не найдено'
       });
     }
+
+    // Обновляем произведение
+    await Artwork.update(req.body, {
+      where: { id: req.params.id }
+    });
+
+    // Получаем обновленное произведение искусства
     const updatedArtwork = await Artwork.findByPk(req.params.id, {
       include: [
         { model: Author },
@@ -127,6 +132,7 @@ exports.updateArtwork = async (req, res) => {
         { model: Exhibition }
       ]
     });
+
     res.status(200).json({
       status: 'success',
       data: {

@@ -3,7 +3,7 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const artworkController = require('../controllers/artworkController');
 const { protect, restrictTo } = require('../middleware/auth');
-const { validateArtwork, validateArtworkId, validate } = require('../middleware');
+const { validateArtwork, validateArtworkId, validateArtworkUpdate, validate } = require('../middleware');
 
 // Настройка rate limiting
 const limiter = rateLimit({
@@ -35,7 +35,7 @@ router.use(restrictTo('admin', 'manager'));
 router.use(logRequest);
 
 router.post('/', validateArtwork, validate, artworkController.createArtwork);
-router.put('/:id', validateArtworkId, validateArtwork, validate, artworkController.updateArtwork);
+router.put('/:id', validateArtworkId, validateArtworkUpdate, validate, artworkController.updateArtwork);
 router.delete('/:id', validateArtworkId, validate, artworkController.deleteArtwork);
 
 module.exports = router;

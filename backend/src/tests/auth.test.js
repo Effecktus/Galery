@@ -2,7 +2,6 @@ const assert = require('assert');
 const request = require('supertest');
 const app = require('../app');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
 const { clearDatabase, createTestUser } = require('./testUtils');
 
 // Используем JWT_SECRET из .env

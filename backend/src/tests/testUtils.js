@@ -58,20 +58,26 @@ exports.clearDatabase = async () => {
  * @returns {Promise<Object>} - Созданный пользователь
  */
 exports.createTestUser = async (userData = {}) => {
+  const timestamp = Date.now();
   const defaultData = {
     surname: 'Тестов',
     first_name: 'Тест',
     patronymic: 'Тестович',
-    email: `test-${Date.now()}@example.com`,
-    password: 'Password123!',
+    email: `test-${timestamp}@example.com`,
+    password: 'Test123!@#',
     role: 'user'
   };
 
   const data = { ...defaultData, ...userData };
   
-  // Хэшируем пароль, если он передан в явном виде
+  // Если email не был явно указан в userData, используем уникальный email
+  if (!userData.email) {
+    data.email = `test-${timestamp}@example.com`;
+  }
+
+  // Хэшируем пароль
   if (userData.password) {
-    data.password = await bcrypt.hash(data.password, 10);
+    data.password = await bcrypt.hash(userData.password, 10);
   } else {
     data.password = await bcrypt.hash(defaultData.password, 10);
   }

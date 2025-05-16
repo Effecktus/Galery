@@ -26,6 +26,7 @@ const validate = (req, res, next) => {
 module.exports = {
   validate,
   validateAuth: userValidation.validateAuth,
+  validateArtworkUpdate: artworkValidation.validateArtworkUpdate,
   ...ticketValidation,
   ...exhibitionValidation,
   ...styleValidation,

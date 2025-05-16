@@ -3,7 +3,7 @@ const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const userController = require('../controllers/userController');
 const { protect, restrictTo } = require('../middleware/auth');
-const { validateUser, validateUserId, validate } = require('../middleware');
+const { validateUser, validateUserId, validateUserUpdate, validate } = require('../middleware');
 
 // Настройка rate limiting
 const limiter = rateLimit({
@@ -36,7 +36,7 @@ router.use(logRequest);
 router.post('/', validateUser, validate, userController.createUser);
 router.get('/', userController.getAllUsers);
 router.get('/:id', validateUserId, validate, userController.getUser);
-router.put('/:id', validateUserId, validateUser, validate, userController.updateUser);
+router.put('/:id', validateUserId, validateUserUpdate, validate, userController.updateUser);
 router.delete('/:id', validateUserId, validate, userController.deleteUser);
 
 module.exports = router;

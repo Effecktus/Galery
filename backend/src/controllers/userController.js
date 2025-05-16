@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const bcrypt = require('bcryptjs');
 
 // Функция для фильтрации чувствительных данных
 const filterSensitiveData = (user) => {
@@ -83,17 +84,36 @@ exports.getUser = async (req, res) => {
 // Обновление пользователя
 exports.updateUser = async (req, res) => {
   try {
-    const [updated] = await User.update(req.body, {
-      where: { id: req.params.id },
-      returning: true
-    });
-    if (updated[0] === 0) {
+    // Сначала проверяем существование пользователя
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
       return res.status(404).json({
         status: 'error',
         message: 'Пользователь не найден'
       });
     }
+
+    // Фильтруем поля, которые можно обновить
+    const allowedFields = ['surname', 'first_name', 'patronymic', 'email', 'password', 'role'];
+    const updateData = {};
+    
+    for (const field of allowedFields) {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+        updateData[field] = req.body[field];
+      }
+    }
+
+    // Если есть пароль, хэшируем его вручную
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+
+    // Обновляем пользователя с включенной валидацией
+    await user.update(updateData);
+    
+    // Получаем обновленного пользователя
     const updatedUser = await User.findByPk(req.params.id);
+    
     res.status(200).json({
       status: 'success',
       data: {
@@ -101,9 +121,11 @@ exports.updateUser = async (req, res) => {
       }
     });
   } catch(err) {
-    res.status(500).json({
+    console.error('Update error:', err);
+    res.status(400).json({
       status: 'error',
-      message: err.message
+      message: err.message,
+      errors: err.errors?.map(e => ({ message: e.message })) || [{ message: err.message }]
     });
   }
 };

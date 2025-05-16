@@ -9,6 +9,7 @@ const styleRoutes = require('./styleRoutes');
 const genreRoutes = require('./genreRoutes');
 const authorRoutes = require('./authorRoutes');
 const artworkRoutes = require('./artworkRoutes');
+const userRoutes = require('./userRoutes');
 
 // Группировка маршрутов по версиям API
 const apiV1 = express.Router();
@@ -23,6 +24,7 @@ apiV1.use('/artworks', artworkRoutes);
 
 // Защищенные маршруты
 apiV1.use('/tickets', ticketRoutes);
+apiV1.use('/users', userRoutes);
 
 // Использование версии API
 router.use('/api/v1', apiV1);

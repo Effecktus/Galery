@@ -14,7 +14,7 @@ exports.protect = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         status: 'error',
-        message: 'You are not logged in! Please log in to get access.'
+        message: 'Вы не вошли в систему. Пожалуйста, войдите, чтобы получить доступ.'
       });
     }
 
@@ -29,7 +29,7 @@ exports.protect = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({
         status: 'error',
-        message: 'The user no longer exists.'
+        message: 'Пользователь больше не существует.'
       });
     }
 
@@ -37,9 +37,21 @@ exports.protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (err) {
+    if (err.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Недействительный токен. Пожалуйста, войдите заново.'
+      });
+    } else if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Срок действия вашего токена истек. Пожалуйста, войдите заново.'
+      });
+    }
+    
     return res.status(401).json({
       status: 'error',
-      message: 'Authentication failed. Please log in again.'
+      message: 'Ошибка аутентификации. Пожалуйста, войдите заново.'
     });
   }
 };
@@ -50,7 +62,7 @@ exports.restrictTo = (...roles) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({
         status: 'error',
-        message: 'You do not have permission to perform this action'
+        message: 'У вас нет прав для выполнения этого действия.'
       });
     }
     next();

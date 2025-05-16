@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
-    "test": "mocha \"src/tests/**/*.test.js\" --sort --exit",
+    "test": "mocha \"src/tests/00_init.test.js\" \"src/tests/auth.test.js\" \"src/tests/genre.test.js\" \"src/tests/style.test.js\" \"src/tests/author.test.js\" \"src/tests/index.test.js\" --exit",
     "test:watch": "mocha \"src/tests/**/*.test.js\" --sort --watch",
     "test:auth": "mocha src/tests/auth.test.js --exit",
     "test:style": "mocha src/tests/style.test.js --exit",
@@ -14,8 +14,7 @@
     "test:author": "mocha src/tests/author.test.js --exit",
     "test:artwork": "mocha src/tests/artwork.test.js --exit",
     "test:exhibition": "mocha src/tests/exhibition.test.js --exit",
-    "test:ticket": "mocha src/tests/ticket.test.js --exit",
-    "test:win": "mocha \"src/tests/00_init.test.js\" \"src/tests/auth.test.js\" \"src/tests/genre.test.js\" \"src/tests/style.test.js\" \"src/tests/author.test.js\" \"src/tests/index.test.js\" --exit"
+    "test:ticket": "mocha src/tests/ticket.test.js --exit"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

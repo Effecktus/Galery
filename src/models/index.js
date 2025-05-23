@@ -1,0 +1,70 @@
+const { Sequelize } = require('sequelize');
+const config = require('../config/database');
+
+const sequelize = new Sequelize(
+    config.database,
+    config.username,
+    config.password,
+    {
+        host: config.host,
+        port: config.port,
+        dialect: config.dialect,
+        pool: config.pool,
+        define: config.define,
+        logging: config.logging
+    }
+);
+
+// Импортируем модели
+const UserModel = require('./User');
+const AuthorModel = require('./Author');
+const StyleModel = require('./Style');
+const GenreModel = require('./Genre');
+const ExhibitionModel = require('./Exhibition');
+const ArtworkModel = require('./Artwork');
+const TicketModel = require('./Ticket');
+
+// Инициализируем модели
+const User = UserModel(sequelize);
+const Author = AuthorModel(sequelize);
+const Style = StyleModel(sequelize);
+const Genre = GenreModel(sequelize);
+const Exhibition = ExhibitionModel(sequelize);
+const Artwork = ArtworkModel(sequelize);
+const Ticket = TicketModel(sequelize);
+
+// Определение связей
+Artwork.belongsTo(Author, { foreignKey: 'author_id' });
+Author.hasMany(Artwork, { foreignKey: 'author_id' });
+
+Artwork.belongsTo(Style, { foreignKey: 'style_id' });
+Style.hasMany(Artwork, { foreignKey: 'style_id' });
+
+Artwork.belongsTo(Genre, { foreignKey: 'genre_id' });
+Genre.hasMany(Artwork, { foreignKey: 'genre_id' });
+
+Artwork.belongsTo(Exhibition, { foreignKey: 'exhibition_id' });
+Exhibition.hasMany(Artwork, { foreignKey: 'exhibition_id' });
+
+Ticket.belongsTo(Exhibition, { foreignKey: 'exhibition_id' });
+Exhibition.hasMany(Ticket, { foreignKey: 'exhibition_id' });
+
+Ticket.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(Ticket, { foreignKey: 'user_id' });
+
+// Синхронизация с базой данных
+sequelize.sync({ alter: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' })
+    .then(() => console.log('Database synchronized'))
+    .catch(err => console.error('Error synchronizing database:', err));
+
+module.exports = {
+    sequelize,
+    Sequelize,
+    User,
+    Author,
+    Style,
+    Genre,
+    Exhibition,
+    Artwork,
+    Ticket
+}; 

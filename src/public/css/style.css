@@ -1,0 +1,132 @@
+/* Общие стили */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Стили для карточек выставок и картин */
+.card {
+    transition: transform 0.2s;
+    margin-bottom: 1rem;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+/* Стили для форм */
+.form-container {
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* Стили для навигации */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-link {
+    position: relative;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #fff;
+    transition: width 0.3s;
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+/* Стили для футера */
+.footer {
+    margin-top: auto;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+.social-links a {
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.social-links a:hover {
+    color: #007bff !important;
+}
+
+/* Стили для алертов */
+.alert {
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+/* Стили для кнопок */
+.btn {
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Стили для таблиц */
+.table {
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Стили для пагинации */
+.pagination {
+    margin-top: 2rem;
+    justify-content: center;
+}
+
+.page-link {
+    color: #007bff;
+    border-radius: 4px;
+    margin: 0 2px;
+}
+
+.page-link:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    .card-img-top {
+        height: 150px;
+    }
+    
+    .form-container {
+        margin: 1rem;
+        padding: 1rem;
+    }
+} 

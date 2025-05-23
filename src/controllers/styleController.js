@@ -1,0 +1,278 @@
+const { Style, Artwork } = require('../models');
+const { Op, ValidationError } = require('sequelize');
+
+// Создание нового стиля
+exports.createStyle = async (req, res) => {
+  try {
+    // Проверяем, существует ли стиль с таким именем
+    if (req.body.name) {
+      const existingStyle = await Style.findOne({
+        where: { name: req.body.name }
+      });
+      
+      if (existingStyle) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Стиль с таким именем уже существует'
+        });
+      }
+    }
+
+    const newStyle = await Style.create(req.body);
+    res.status(201).json({
+      status: 'success',
+      message: 'Стиль успешно создан',
+      data: {
+        style: newStyle
+      }
+    });
+  } catch(err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Ошибка валидации данных',
+        errors: err.errors.map(e => ({
+          field: e.path,
+          message: e.message
+        }))
+      });
+    }
+    res.status(400).json({
+      status: 'error',
+      message: 'Не удалось создать стиль: ' + err.message
+    });      
+  }
+};
+
+// Получение всех стилей
+exports.getAllStyles = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
+
+    const where = {};
+    
+    // Фильтрация по названию
+    if (req.query.name) {
+      where.name = { [Op.like]: `%${req.query.name}%` };
+    }
+
+    // Фильтрация по наличию произведений
+    if (req.query.has_artworks === 'true') {
+      where['$Artworks.id$'] = { [Op.ne]: null };
+    } else if (req.query.has_artworks === 'false') {
+      where['$Artworks.id$'] = null;
+    }
+
+    const { count, rows: styles } = await Style.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: [['name', 'ASC']],
+      include: [{
+        model: Artwork,
+        attributes: ['id', 'title', 'creation_year', 'image_path'],
+        required: req.query.has_artworks === 'true'
+      }],
+      distinct: true
+    });
+
+    // Добавляем статистику по произведениям
+    const stylesWithStats = styles.map(style => ({
+      ...style.toJSON(),
+      statistics: {
+        total_artworks: style.Artworks ? style.Artworks.length : 0
+      }
+    }));
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        styles: stylesWithStats,
+        pagination: {
+          total: count,
+          page,
+          pages: Math.ceil(count / limit),
+          limit
+        }
+      }
+    });
+  } catch(err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Ошибка при получении списка стилей: ' + err.message
+    });
+  }
+};
+
+// Получение стиля по ID
+exports.getStyle = async (req, res) => {
+  try {
+    const style = await Style.findByPk(req.params.id, {
+      include: [{
+        model: Artwork,
+        attributes: ['id', 'title', 'creation_year', 'image_path', 'author_id', 'genre_id'],
+        include: [
+          {
+            model: Artwork.sequelize.models.Author,
+            attributes: ['id', 'surname', 'first_name', 'patronymic']
+          },
+          {
+            model: Artwork.sequelize.models.Genre,
+            attributes: ['id', 'name']
+          }
+        ]
+      }]
+    });
+    
+    if (!style) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Стиль с указанным ID не найден'
+      });
+    }
+
+    // Добавляем статистику
+    const styleWithStats = {
+      ...style.toJSON(),
+      statistics: {
+        total_artworks: style.Artworks.length,
+        artworks_by_year: style.Artworks.reduce((acc, artwork) => {
+          const year = artwork.creation_year;
+          acc[year] = (acc[year] || 0) + 1;
+          return acc;
+        }, {}),
+        artworks_by_author: style.Artworks.reduce((acc, artwork) => {
+          const authorId = artwork.Author.id;
+          if (!acc[authorId]) {
+            acc[authorId] = {
+              id: authorId,
+              name: `${artwork.Author.surname} ${artwork.Author.first_name} ${artwork.Author.patronymic || ''}`.trim(),
+              count: 0
+            };
+          }
+          acc[authorId].count++;
+          return acc;
+        }, {})
+      }
+    };
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        style: styleWithStats
+      }
+    });
+  } catch(err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Ошибка при получении информации о стиле: ' + err.message
+    });
+  }
+};
+
+// Обновление стиля по ID
+exports.updateStyle = async (req, res) => {
+  try {
+    const style = await Style.findByPk(req.params.id);
+    
+    if (!style) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Стиль с указанным ID не найден'
+      });
+    }
+
+    // Проверяем, существует ли стиль с таким именем
+    if (req.body.name) {
+      const existingStyle = await Style.findOne({
+        where: {
+          name: req.body.name,
+          id: { [Op.ne]: req.params.id }
+        }
+      });
+      
+      if (existingStyle) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Стиль с таким именем уже существует'
+        });
+      }
+    }
+
+    // Обновляем стиль
+    await style.update(req.body);
+
+    // Получаем обновленный стиль
+    const updatedStyle = await Style.findByPk(req.params.id, {
+      include: [{
+        model: Artwork,
+        attributes: ['id', 'title', 'creation_year', 'image_path']
+      }]
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Стиль успешно обновлен',
+      data: {
+        style: updatedStyle
+      }
+    });
+  } catch(err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Ошибка валидации данных',
+        errors: err.errors.map(e => ({
+          field: e.path,
+          message: e.message
+        }))
+      });
+    }
+    res.status(500).json({
+      status: 'error',
+      message: 'Ошибка при обновлении стиля: ' + err.message
+    });
+  }
+};
+
+// Удаление стиля по ID
+exports.deleteStyle = async (req, res) => {
+  try {
+    const style = await Style.findByPk(req.params.id, {
+      include: [{
+        model: Artwork,
+        attributes: ['id']
+      }]
+    });
+    
+    if (!style) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Стиль с указанным ID не найден'
+      });
+    }
+
+    // Проверяем, есть ли произведения с этим стилем
+    if (style.Artworks && style.Artworks.length > 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Невозможно удалить стиль, который используется в произведениях'
+      });
+    }
+
+    await style.destroy();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Стиль успешно удален',
+      data: null
+    });
+  } catch(err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Ошибка при удалении стиля: ' + err.message
+    });
+  }
+};

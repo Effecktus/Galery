@@ -1,0 +1,41 @@
+{
+  "name": "gallery-monolith",
+  "version": "1.0.0",
+  "description": "Monolithic Art Gallery application",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" \"src/tests/**/*.test.js\" --exit --require dotenv/config",
+    "test:auth": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/auth.test.js --exit --require dotenv/config",
+    "test:style": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/style.test.js --exit --require dotenv/config",
+    "test:genre": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/genre.test.js --exit --require dotenv/config",
+    "test:author": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/author.test.js --exit --require dotenv/config",
+    "test:artwork": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/artwork.test.js --exit --require dotenv/config",
+    "test:exhibition": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/exhibition.test.js --exit --require dotenv/config",
+    "test:ticket": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/ticket.test.js --exit --require dotenv/config",
+    "test:user": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/user.test.js --exit --require dotenv/config"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-ejs-layouts": "^2.5.1",
+    "express-session": "^1.17.3",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.1",
+    "sequelize": "^6.33.0",
+    "validator": "^13.11.0"
+  },
+  "devDependencies": {
+    "chai": "^4.3.7",
+    "chai-http": "^4.4.0",
+    "cross-env": "^7.0.3",
+    "mocha": "^10.2.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.3"
+  }
+} 

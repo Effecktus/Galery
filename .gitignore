@@ -3,6 +3,7 @@
 .env.local
 .env.development
 .env.production
+.env.test
 
 # Зависимости Node.js
 node_modules/

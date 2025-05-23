@@ -116,11 +116,11 @@ exports.getGenre = async (req, res) => {
         attributes: ['id', 'title', 'creation_year', 'image_path', 'author_id', 'style_id'],
         include: [
           {
-            model: Artwork.sequelize.models.Author,
+            model: Author, // Заменено с Artwork.sequelize.models.Author
             attributes: ['id', 'surname', 'first_name', 'patronymic']
           },
           {
-            model: Artwork.sequelize.models.Style,
+            model: Style, // Заменено с Artwork.sequelize.models.Style
             attributes: ['id', 'name']
           }
         ]

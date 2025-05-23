@@ -1,48 +1,27 @@
-const { User, Ticket } = require('../models');
-const bcrypt = require('bcryptjs');
+const { User, Ticket, Exhibition } = require('../models');
 const { Op, ValidationError } = require('sequelize');
+const { validatePassword, validateEmail } = require('../middleware/validation');
 
 // Функция для фильтрации чувствительных данных
 const filterSensitiveData = (user) => {
-  const { password, reset_token, reset_token_expires, ...userWithoutSensitiveData } = user.toJSON();
+  const { password, ...userWithoutSensitiveData } = user.toJSON();
   return userWithoutSensitiveData;
 };
 
-// Функция для валидации пароля
-const validatePassword = (password) => {
-  if (!password) return true; // Пароль не обязателен при обновлении
-  if (password.length < 8) {
-    throw new Error('Пароль должен содержать минимум 8 символов');
-  }
-  if (!/[A-Z]/.test(password)) {
-    throw new Error('Пароль должен содержать хотя бы одну заглавную букву');
-  }
-  if (!/[a-z]/.test(password)) {
-    throw new Error('Пароль должен содержать хотя бы одну строчную букву');
-  }
-  if (!/[0-9]/.test(password)) {
-    throw new Error('Пароль должен содержать хотя бы одну цифру');
-  }
-  return true;
-};
-
-// Функция для валидации email
-const validateEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    throw new Error('Некорректный формат email');
-  }
-  return true;
-};
-
-// Создание нового пользователя
+// Создание нового пользователя (админская операция)
 exports.createUser = async (req, res) => {
   try {
-    // Валидация email
+    // Проверка роли админа
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Требуются права администратора'
+      });
+    }
+
     if (req.body.email) {
       validateEmail(req.body.email);
       
-      // Проверяем, существует ли пользователь с таким email
       const existingUser = await User.findOne({
         where: { email: req.body.email }
       });
@@ -55,16 +34,11 @@ exports.createUser = async (req, res) => {
       }
     }
 
-    // Валидация пароля
     if (req.body.password) {
       validatePassword(req.body.password);
-      req.body.password = await bcrypt.hash(req.body.password, 12);
     }
 
-    // Устанавливаем роль по умолчанию, если не указана
-    if (!req.body.role) {
-      req.body.role = 'user';
-    } else if (!['admin', 'manager', 'user'].includes(req.body.role)) {
+    if (req.body.role && !['admin', 'manager', 'user'].includes(req.body.role)) {
       return res.status(400).json({
         status: 'error',
         message: 'Некорректная роль пользователя. Допустимые значения: admin, manager, user'
@@ -79,7 +53,7 @@ exports.createUser = async (req, res) => {
         user: filterSensitiveData(newUser)
       }
     });
-  } catch(err) {
+  } catch (err) {
     if (err instanceof ValidationError) {
       return res.status(400).json({
         status: 'error',
@@ -90,10 +64,17 @@ exports.createUser = async (req, res) => {
         }))
       });
     }
-    res.status(400).json({
+    if (err.message.includes('Пароль') || err.message.includes('email')) {
+      return res.status(400).json({
+        status: 'error',
+        message: err.message
+      });
+    }
+    console.error('Create user error:', err);
+    res.status(500).json({
       status: 'error',
-      message: 'Не удалось создать пользователя: ' + err.message
-    }); 
+      message: 'Не удалось создать пользователя'
+    });
   }
 };
 
@@ -106,7 +87,6 @@ exports.getAllUsers = async (req, res) => {
 
     const where = {};
     
-    // Фильтрация по роли
     if (req.query.role) {
       if (!['admin', 'manager', 'user'].includes(req.query.role)) {
         return res.status(400).json({
@@ -117,12 +97,10 @@ exports.getAllUsers = async (req, res) => {
       where.role = req.query.role;
     }
 
-    // Фильтрация по email
     if (req.query.email) {
       where.email = { [Op.like]: `%${req.query.email}%` };
     }
 
-    // Фильтрация по имени
     if (req.query.surname) {
       where.surname = { [Op.like]: `%${req.query.surname}%` };
     }
@@ -130,7 +108,6 @@ exports.getAllUsers = async (req, res) => {
       where.first_name = { [Op.like]: `%${req.query.first_name}%` };
     }
 
-    // Фильтрация по дате регистрации
     if (req.query.created_after) {
       where.created_at = {
         ...where.created_at,
@@ -156,7 +133,6 @@ exports.getAllUsers = async (req, res) => {
       }]
     });
 
-    // Добавляем статистику по билетам
     const usersWithStats = users.map(user => {
       const userData = filterSensitiveData(user);
       return {
@@ -179,10 +155,11 @@ exports.getAllUsers = async (req, res) => {
         }
       }
     });
-  } catch(err) {
+  } catch (err) {
+    console.error('Get all users error:', err);
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при получении списка пользователей: ' + err.message
+      message: 'Ошибка при получении списка пользователей'
     });
   }
 };
@@ -193,9 +170,9 @@ exports.getUser = async (req, res) => {
     const user = await User.findByPk(req.params.id, {
       include: [{
         model: Ticket,
-        attributes: ['id', 'exhibition_id', 'status', 'visit_date'],
+        attributes: ['id', 'exhibition_id', 'quantity', 'booking_date', 'total_price'],
         include: [{
-          model: Ticket.sequelize.models.Exhibition,
+          model: Exhibition,
           attributes: ['id', 'title', 'start_date', 'end_date']
         }]
       }]
@@ -208,17 +185,10 @@ exports.getUser = async (req, res) => {
       });
     }
 
-    // Добавляем статистику
     const userWithStats = {
       ...filterSensitiveData(user),
       statistics: {
-        total_tickets: user.Tickets.length,
-        active_tickets: user.Tickets.filter(ticket => ticket.status === 'active').length,
-        cancelled_tickets: user.Tickets.filter(ticket => ticket.status === 'cancelled').length,
-        upcoming_visits: user.Tickets.filter(ticket => 
-          ticket.status === 'active' && 
-          new Date(ticket.visit_date) > new Date()
-        ).length
+        total_tickets: user.Tickets.reduce((sum, ticket) => sum + ticket.quantity, 0)
       }
     };
 
@@ -228,10 +198,11 @@ exports.getUser = async (req, res) => {
         user: userWithStats
       }
     });
-  } catch(err) {
+  } catch (err) {
+    console.error('Get user error:', err);
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при получении информации о пользователе: ' + err.message
+      message: 'Ошибка при получении информации о пользователе'
     });
   }
 };
@@ -248,7 +219,6 @@ exports.updateUser = async (req, res) => {
       });
     }
 
-    // Проверяем email на уникальность
     if (req.body.email && req.body.email !== user.email) {
       validateEmail(req.body.email);
       
@@ -267,16 +237,12 @@ exports.updateUser = async (req, res) => {
       }
     }
 
-    // Валидация и хеширование пароля
     if (req.body.password) {
       validatePassword(req.body.password);
-      req.body.password = await bcrypt.hash(req.body.password, 12);
     }
 
-    // Обновляем пользователя
     await user.update(req.body);
 
-    // Получаем обновленного пользователя
     const updatedUser = await User.findByPk(req.params.id, {
       include: [{
         model: Ticket,
@@ -291,7 +257,7 @@ exports.updateUser = async (req, res) => {
         user: filterSensitiveData(updatedUser)
       }
     });
-  } catch(err) {
+  } catch (err) {
     if (err instanceof ValidationError) {
       return res.status(400).json({
         status: 'error',
@@ -302,9 +268,16 @@ exports.updateUser = async (req, res) => {
         }))
       });
     }
+    if (err.message.includes('Пароль') || err.message.includes('email')) {
+      return res.status(400).json({
+        status: 'error',
+        message: err.message
+      });
+    }
+    console.error('Update user error:', err);
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при обновлении пользователя: ' + err.message
+      message: 'Ошибка при обновлении пользователя'
     });
   }
 };
@@ -326,12 +299,10 @@ exports.deleteUser = async (req, res) => {
       });
     }
 
-    // Проверяем, есть ли активные билеты
-    const hasActiveTickets = user.Tickets.some(ticket => ticket.status === 'active');
-    if (hasActiveTickets) {
+    if (user.Tickets.length > 0) {
       return res.status(400).json({
         status: 'error',
-        message: 'Невозможно удалить пользователя с активными билетами'
+        message: 'Невозможно удалить пользователя с забронированными билетами'
       });
     }
 
@@ -342,59 +313,11 @@ exports.deleteUser = async (req, res) => {
       message: 'Пользователь успешно удален',
       data: null
     });
-  } catch(err) {
+  } catch (err) {
+    console.error('Delete user error:', err);
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при удалении пользователя: ' + err.message
-    });
-  }
-};
-
-// Получение профиля текущего пользователя
-exports.getMe = async (req, res) => {
-  try {
-    const user = await User.findByPk(req.user.id, {
-      include: [{
-        model: Ticket,
-        attributes: ['id', 'exhibition_id', 'status', 'visit_date'],
-        include: [{
-          model: Ticket.sequelize.models.Exhibition,
-          attributes: ['id', 'title', 'start_date', 'end_date']
-        }]
-      }]
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Пользователь не найден'
-      });
-    }
-
-    // Добавляем статистику
-    const userWithStats = {
-      ...filterSensitiveData(user),
-      statistics: {
-        total_tickets: user.Tickets.length,
-        active_tickets: user.Tickets.filter(ticket => ticket.status === 'active').length,
-        cancelled_tickets: user.Tickets.filter(ticket => ticket.status === 'cancelled').length,
-        upcoming_visits: user.Tickets.filter(ticket => 
-          ticket.status === 'active' && 
-          new Date(ticket.visit_date) > new Date()
-        ).length
-      }
-    };
-
-    res.status(200).json({
-      status: 'success',
-      data: {
-        user: userWithStats
-      }
-    });
-  } catch(err) {
-    res.status(500).json({
-      status: 'error',
-      message: 'Ошибка при получении профиля: ' + err.message
+      message: 'Ошибка при удалении пользователя'
     });
   }
 };
@@ -411,12 +334,10 @@ exports.updateMe = async (req, res) => {
       });
     }
 
-    // Запрещаем обновление роли через этот метод
     if (req.body.role) {
       delete req.body.role;
     }
 
-    // Проверяем email на уникальность
     if (req.body.email && req.body.email !== user.email) {
       validateEmail(req.body.email);
       
@@ -435,16 +356,12 @@ exports.updateMe = async (req, res) => {
       }
     }
 
-    // Валидация и хеширование пароля
     if (req.body.password) {
       validatePassword(req.body.password);
-      req.body.password = await bcrypt.hash(req.body.password, 12);
     }
 
-    // Обновляем пользователя
     await user.update(req.body);
 
-    // Получаем обновленного пользователя
     const updatedUser = await User.findByPk(req.user.id, {
       include: [{
         model: Ticket,
@@ -459,7 +376,7 @@ exports.updateMe = async (req, res) => {
         user: filterSensitiveData(updatedUser)
       }
     });
-  } catch(err) {
+  } catch (err) {
     if (err instanceof ValidationError) {
       return res.status(400).json({
         status: 'error',
@@ -470,9 +387,16 @@ exports.updateMe = async (req, res) => {
         }))
       });
     }
+    if (err.message.includes('Пароль') || err.message.includes('email')) {
+      return res.status(400).json({
+        status: 'error',
+        message: err.message
+      });
+    }
+    console.error('Update me error:', err);
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при обновлении профиля: ' + err.message
+      message: 'Ошибка при обновлении профиля'
     });
   }
 };

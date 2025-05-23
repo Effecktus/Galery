@@ -1,4 +1,4 @@
-const { Exhibition, Artwork, Ticket } = require('../models');
+const { Exhibition, Artwork, Ticket, Author, Style, Genre } = require('../models');
 const { Op, ValidationError } = require('sequelize');
 
 // Создание новой выставки
@@ -28,10 +28,7 @@ exports.createExhibition = async (req, res) => {
       }
     }
 
-    const exhibition = await Exhibition.create({
-      ...req.body,
-      status: 'planned' // Статус всегда planned при создании
-    });
+    const exhibition = await Exhibition.create(req.body);
 
     const exhibitionData = await Exhibition.findByPk(exhibition.id, {
       include: [{ 
@@ -71,10 +68,8 @@ exports.getAllExhibitions = async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 10;
     const offset = (page - 1) * limit;
 
-    // Базовые условия фильтрации
     const where = {};
     
-    // Фильтрация по статусу
     if (req.query.status) {
       if (!['planned', 'active', 'completed'].includes(req.query.status)) {
         return res.status(400).json({
@@ -85,17 +80,14 @@ exports.getAllExhibitions = async (req, res) => {
       where.status = req.query.status;
     }
 
-    // Фильтрация по местоположению
     if (req.query.location) {
       where.location = { [Op.like]: `%${req.query.location}%` };
     }
 
-    // Фильтрация по названию
     if (req.query.title) {
       where.title = { [Op.like]: `%${req.query.title}%` };
     }
     
-    // Фильтрация по датам
     if (req.query.start_date) {
       const startDate = new Date(req.query.start_date);
       if (isNaN(startDate.getTime())) {
@@ -117,7 +109,6 @@ exports.getAllExhibitions = async (req, res) => {
       where.end_date = { [Op.lte]: endDate };
     }
 
-    // Фильтрация по цене
     if (req.query.min_price) {
       const minPrice = parseFloat(req.query.min_price);
       if (isNaN(minPrice) || minPrice < 0) {
@@ -186,22 +177,22 @@ exports.getExhibition = async (req, res) => {
           attributes: ['id', 'title', 'creation_year', 'image_path', 'author_id', 'style_id', 'genre_id'],
           include: [
             {
-              model: Artwork.sequelize.models.Author,
+              model: Author,
               attributes: ['id', 'surname', 'first_name', 'patronymic']
             },
             {
-              model: Artwork.sequelize.models.Style,
+              model: Style,
               attributes: ['id', 'name']
             },
             {
-              model: Artwork.sequelize.models.Genre,
+              model: Genre,
               attributes: ['id', 'name']
             }
           ]
         },
         {
           model: Ticket,
-          attributes: ['id', 'purchase_date', 'visit_date', 'status']
+          attributes: ['id', 'quantity', 'booking_date', 'total_price']
         }
       ]
     });
@@ -219,9 +210,7 @@ exports.getExhibition = async (req, res) => {
         exhibition,
         statistics: {
           total_artworks: exhibition.Artworks.length,
-          total_tickets: exhibition.Tickets.length,
-          sold_tickets: exhibition.Tickets.filter(t => t.status === 'sold').length,
-          used_tickets: exhibition.Tickets.filter(t => t.status === 'used').length
+          total_tickets: exhibition.Tickets.reduce((sum, ticket) => sum + ticket.quantity, 0)
         }
       }
     });
@@ -245,7 +234,6 @@ exports.updateExhibition = async (req, res) => {
       });
     }
 
-    // Проверяем корректность дат
     if (req.body.start_date || req.body.end_date) {
       const startDate = new Date(req.body.start_date || exhibition.start_date);
       const endDate = new Date(req.body.end_date || exhibition.end_date);
@@ -258,7 +246,6 @@ exports.updateExhibition = async (req, res) => {
       }
     }
 
-    // Проверяем корректность цены билета
     if (req.body.ticket_price !== undefined) {
       const price = parseFloat(req.body.ticket_price);
       if (isNaN(price) || price < 0) {
@@ -269,10 +256,8 @@ exports.updateExhibition = async (req, res) => {
       }
     }
 
-    // Обновляем выставку
     await exhibition.update(req.body);
 
-    // Получаем обновленную выставку
     const updatedExhibition = await Exhibition.findByPk(req.params.id, {
       include: [{ 
         model: Artwork,
@@ -313,7 +298,7 @@ exports.updateExhibitionStatus = async (req, res) => {
     if (!validStatuses.includes(status)) {
       return res.status(400).json({
         status: 'error',
-        message: 'Некорректный статус выставки'
+        message: 'Некорректный статус выставки. Допустимые значения: planned, active, completed'
       });
     }
 
@@ -328,18 +313,10 @@ exports.updateExhibitionStatus = async (req, res) => {
       });
     }
 
-    // Проверка возможности изменения статуса
     if (status === 'completed' && new Date(exhibition.end_date) > new Date()) {
       return res.status(400).json({
         status: 'error',
         message: 'Нельзя завершить выставку до даты окончания'
-      });
-    }
-
-    if (status === 'cancelled' && exhibition.Tickets.some(ticket => ticket.status === 'used')) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Нельзя отменить выставку, на которую уже были проданы билеты'
       });
     }
 
@@ -380,11 +357,10 @@ exports.deleteExhibition = async (req, res) => {
       });
     }
 
-    // Проверяем, есть ли проданные билеты
-    if (exhibition.Tickets.some(ticket => ticket.status === 'sold' || ticket.status === 'used')) {
+    if (exhibition.Tickets.length > 0) {
       return res.status(400).json({
         status: 'error',
-        message: 'Невозможно удалить выставку, на которую были проданы билеты'
+        message: 'Невозможно удалить выставку, на которую были забронированы билеты'
       });
     }
 

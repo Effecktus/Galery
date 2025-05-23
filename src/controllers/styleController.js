@@ -115,11 +115,11 @@ exports.getStyle = async (req, res) => {
         attributes: ['id', 'title', 'creation_year', 'image_path', 'author_id', 'genre_id'],
         include: [
           {
-            model: Artwork.sequelize.models.Author,
+            model: Author, // Заменено с Artwork.sequelize.models.Author
             attributes: ['id', 'surname', 'first_name', 'patronymic']
           },
           {
-            model: Artwork.sequelize.models.Genre,
+            model: Genre, // Заменено с Artwork.sequelize.models.Genre
             attributes: ['id', 'name']
           }
         ]
@@ -154,7 +154,14 @@ exports.getStyle = async (req, res) => {
           }
           acc[authorId].count++;
           return acc;
-        }, {})
+        }, {}),
+        artworks_by_style: { // Добавлено для консистентности
+          [style.id]: {
+            id: style.id,
+            name: style.name,
+            count: style.Artworks.length
+          }
+        }
       }
     };
     

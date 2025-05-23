@@ -5,11 +5,15 @@ const session = require('express-session');
 const cors = require('cors');
 const expressLayouts = require('express-ejs-layouts');
 const db = require('./models');
+const { protect } = require('./middleware/auth');
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -30,7 +34,7 @@ db.sequelize.authenticate()
     .then(() => console.log('Database connected...'))
     .catch(err => {
         console.error('Unable to connect to the database:', err);
-        process.exit(1); // Завершаем процесс, если не удалось подключиться к БД
+        process.exit(1);
     });
 
 // View engine setup
@@ -101,13 +105,36 @@ app.get('/artworks', (req, res) => {
     });
 });
 
+app.get('/tickets', protect, (req, res) => {
+    res.render('tickets/index', {
+        title: 'Мои билеты',
+        user: res.locals.user
+    });
+});
+
+app.get('/admin/users', protect, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).render('error', {
+            title: 'Доступ запрещён',
+            message: 'Требуются права администратора',
+            error: { status: 403 },
+            user: res.locals.user
+        });
+    }
+    res.render('admin/users', {
+        title: 'Управление пользователями',
+        user: res.locals.user
+    });
+});
+
 // Обработка 404 ошибок
-app.use((req, res, next) => {
+app.use((req, res) => {
     res.status(404).render('error', {
         title: 'Страница не найдена',
         message: 'Запрашиваемая страница не существует',
         error: { status: 404 },
-        user: res.locals.user || null
+        user: res.locals.user || null,
+        status: 'error'
     });
 });
 
@@ -118,7 +145,8 @@ app.use((err, req, res, next) => {
         title: 'Ошибка',
         message: err.message || 'Что-то пошло не так',
         error: process.env.NODE_ENV === 'development' ? err : {},
-        user: res.locals.user || null
+        user: res.locals.user || null,
+        status: 'error'
     });
 });
 
@@ -130,4 +158,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
-}); 
+});

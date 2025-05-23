@@ -1,6 +1,12 @@
-const { User } = require('../models');
+const { User, Ticket, Exhibition } = require('../models');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const { validatePassword, validateEmail } = require('../middleware/validation');
+
+// Функция для фильтрации чувствительных данных
+const filterSensitiveData = (user) => {
+  const { password, ...userWithoutSensitiveData } = user.toJSON();
+  return userWithoutSensitiveData;
+};
 
 // Функция для создания access токена
 const signToken = (userId) => {
@@ -25,14 +31,10 @@ const createSendToken = (user, statusCode, res) => {
   const token = signToken(user.id);
   const refreshToken = signRefreshToken(user.id);
   
-  // Удаляем пароль из ответа
-  const userWithoutPassword = user.toJSON();
-  delete userWithoutPassword.password;
-
   res.status(statusCode).json({
     status: 'success',
     data: {
-      user: userWithoutPassword,
+      user: filterSensitiveData(user),
       token,
       refreshToken
     }
@@ -44,7 +46,9 @@ exports.register = async (req, res) => {
   try {
     const { email, password, surname, first_name, patronymic } = req.body;
 
-    // Проверяем, существует ли пользователь с таким email
+    validateEmail(email);
+    validatePassword(password);
+
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({
@@ -53,28 +57,29 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Создаем нового пользователя
     const newUser = await User.create({
       email,
       password,
       surname,
       first_name,
       patronymic,
-      role: 'user' // По умолчанию роль - user
+      role: 'user'
     });
 
-    // Отправляем токены
     createSendToken(newUser, 201, res);
   } catch (err) {
-    // Проверяем тип ошибки
     if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({
         status: 'error',
         message: err.errors[0].message
       });
     }
-    
-    // Для других ошибок возвращаем 500
+    if (err.message.includes('Пароль') || err.message.includes('email')) {
+      return res.status(400).json({
+        status: 'error',
+        message: err.message
+      });
+    }
     console.error('Registration error:', err);
     res.status(500).json({
       status: 'error',
@@ -88,7 +93,6 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Проверяем, существуют ли email и пароль
     if (!email || !password) {
       return res.status(400).json({
         status: 'error',
@@ -96,9 +100,7 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Проверяем, существует ли пользователь и правильный ли пароль
     const user = await User.findOne({ where: { email } });
-    
     if (!user || !(await user.checkPassword(password))) {
       return res.status(401).json({
         status: 'error',
@@ -106,12 +108,12 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Создаем и отправляем токены
     createSendToken(user, 200, res);
   } catch (err) {
-    res.status(400).json({
+    console.error('Login error:', err);
+    res.status(500).json({
       status: 'error',
-      message: err.message
+      message: 'Внутренняя ошибка сервера'
     });
   }
 };
@@ -128,7 +130,6 @@ exports.refreshToken = async (req, res) => {
       });
     }
 
-    // Проверяем refresh token
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     const user = await User.findByPk(decoded.id);
 
@@ -139,7 +140,6 @@ exports.refreshToken = async (req, res) => {
       });
     }
 
-    // Создаем и отправляем новые токены
     createSendToken(user, 200, res);
   } catch (err) {
     if (err.name === 'JsonWebTokenError') {
@@ -154,9 +154,10 @@ exports.refreshToken = async (req, res) => {
         message: 'Срок действия токена истек'
       });
     }
-    res.status(400).json({
+    console.error('Refresh token error:', err);
+    res.status(500).json({
       status: 'error',
-      message: err.message
+      message: 'Внутренняя ошибка сервера'
     });
   }
 };
@@ -174,27 +175,37 @@ exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    // Получаем пользователя
-    const user = await User.findByPk(req.user.id);
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Текущий и новый пароли обязательны'
+      });
+    }
 
-    // Проверяем текущий пароль
-    if (!(await user.checkPassword(currentPassword))) {
+    const user = await User.findByPk(req.user.id);
+    if (!user || !(await user.checkPassword(currentPassword))) {
       return res.status(401).json({
         status: 'error',
         message: 'Неверный текущий пароль'
       });
     }
 
-    // Обновляем пароль
+    validatePassword(newPassword);
     user.password = newPassword;
     await user.save();
 
-    // Создаем и отправляем новые токены
     createSendToken(user, 200, res);
   } catch (err) {
-    res.status(400).json({
+    if (err.message.includes('Пароль')) {
+      return res.status(400).json({
+        status: 'error',
+        message: err.message
+      });
+    }
+    console.error('Change password error:', err);
+    res.status(500).json({
       status: 'error',
-      message: err.message
+      message: 'Внутренняя ошибка сервера'
     });
   }
 };
@@ -202,19 +213,42 @@ exports.changePassword = async (req, res) => {
 // Получение данных текущего пользователя
 exports.getMe = async (req, res) => {
   try {
-    // Информация о пользователе доступна из middleware защиты маршрута
-    const user = req.user;
-    
+    const user = await User.findByPk(req.user.id, {
+      include: [{
+        model: Ticket,
+        attributes: ['id', 'exhibition_id', 'quantity', 'booking_date', 'total_price'],
+        include: [{
+          model: Exhibition,
+          attributes: ['id', 'title', 'start_date', 'end_date']
+        }]
+      }]
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Пользователь не найден'
+      });
+    }
+
+    const userWithStats = {
+      ...filterSensitiveData(user),
+      statistics: {
+        total_tickets: user.Tickets.reduce((sum, ticket) => sum + ticket.quantity, 0)
+      }
+    };
+
     res.status(200).json({
       status: 'success',
       data: {
-        user
+        user: userWithStats
       }
     });
   } catch (err) {
-    res.status(400).json({
+    console.error('Get me error:', err);
+    res.status(500).json({
       status: 'error',
-      message: err.message
+      message: 'Внутренняя ошибка сервера'
     });
   }
-}; 
+};

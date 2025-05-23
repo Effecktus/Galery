@@ -122,11 +122,11 @@ exports.getAuthor = async (req, res) => {
         attributes: ['id', 'title', 'creation_year', 'image_path', 'style_id', 'genre_id'],
         include: [
           {
-            model: sequelize.models.Style,
+            model: Style, // Заменено с sequelize.models.Style
             attributes: ['name']
           },
           {
-            model: sequelize.models.Genre,
+            model: Genre, // Заменено с sequelize.models.Genre
             attributes: ['name']
           }
         ]

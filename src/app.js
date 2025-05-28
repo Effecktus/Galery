@@ -1,11 +1,17 @@
-require('dotenv').config();
-const express = require('express');
 const path = require('path');
+
+// Загружаем переменные окружения
+if (process.env.NODE_ENV === 'test') {
+    require('dotenv').config({ path: path.join(__dirname, '../.env.test') });
+} else {
+    require('dotenv').config();
+}
+
+const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
 const expressLayouts = require('express-ejs-layouts');
 const db = require('./models');
-const { protect } = require('./middleware/auth');
 
 const app = express();
 
@@ -71,59 +77,66 @@ app.get('/', (req, res) => {
     });
 });
 
-app.get('/login', (req, res) => {
-    if (res.locals.user) {
-        return res.redirect('/');
-    }
-    res.render('auth/login', { 
-        title: 'Вход',
-        user: null
-    });
-});
+// app.get('/login', (req, res) => {
+//     if (res.locals.user) {
+//         return res.redirect('/');
+//     }
+//     res.render('auth/login', { 
+//         title: 'Вход',
+//         user: null
+//     });
+// });
 
-app.get('/register', (req, res) => {
-    if (res.locals.user) {
-        return res.redirect('/');
-    }
-    res.render('auth/register', { 
-        title: 'Регистрация',
-        user: null
-    });
-});
+// app.get('/register', (req, res) => {
+//     if (res.locals.user) {
+//         return res.redirect('/');
+//     }
+//     res.render('auth/register', { 
+//         title: 'Регистрация',
+//         user: null
+//     });
+// });
 
-app.get('/exhibitions', (req, res) => {
-    res.render('exhibitions/index', { 
-        title: 'Выставки',
+// app.get('/exhibitions', (req, res) => {
+//     res.render('exhibitions/index', { 
+//         title: 'Выставки',
+//         user: res.locals.user || null
+//     });
+// });
+
+// app.get('/artworks', (req, res) => {
+//     res.render('artworks/index', { 
+//         title: 'Картины',
+//         user: res.locals.user || null
+//     });
+// });
+
+// app.get('/tickets', protect, (req, res) => {
+//     res.render('tickets/index', {
+//         title: 'Мои билеты',
+//         user: res.locals.user
+//     });
+// });
+
+// app.get('/admin/users', protect, (req, res) => {
+//     if (req.user.role !== 'admin') {
+//         return res.status(403).render('error', {
+//             title: 'Доступ запрещён',
+//             message: 'Требуются права администратора',
+//             error: { status: 403 },
+//             user: res.locals.user
+//         });
+//     }
+//     res.render('admin/users', {
+//         title: 'Управление пользователями',
+//         user: res.locals.user
+//     });
+// });
+
+app.get('/genres/manage', (req, res) => {
+    res.render('genres', {
+        title: 'Управление жанрами',
         user: res.locals.user || null
-    });
-});
-
-app.get('/artworks', (req, res) => {
-    res.render('artworks/index', { 
-        title: 'Картины',
-        user: res.locals.user || null
-    });
-});
-
-app.get('/tickets', protect, (req, res) => {
-    res.render('tickets/index', {
-        title: 'Мои билеты',
-        user: res.locals.user
-    });
-});
-
-app.get('/admin/users', protect, (req, res) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).render('error', {
-            title: 'Доступ запрещён',
-            message: 'Требуются права администратора',
-            error: { status: 403 },
-            user: res.locals.user
-        });
-    }
-    res.render('admin/users', {
-        title: 'Управление пользователями',
-        user: res.locals.user
     });
 });
 

@@ -5,16 +5,7 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "test": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" \"src/tests/**/*.test.js\" --exit --require dotenv/config",
-    "test:auth": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/auth.test.js --exit --require dotenv/config",
-    "test:style": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/style.test.js --exit --require dotenv/config",
-    "test:genre": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/genre.test.js --exit --require dotenv/config",
-    "test:author": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/author.test.js --exit --require dotenv/config",
-    "test:artwork": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/artwork.test.js --exit --require dotenv/config",
-    "test:exhibition": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/exhibition.test.js --exit --require dotenv/config",
-    "test:ticket": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/ticket.test.js --exit --require dotenv/config",
-    "test:user": "cross-env NODE_ENV=test mocha \"src/tests/setup.test.js\" src/tests/user.test.js --exit --require dotenv/config"
+    "dev": "nodemon src/app.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

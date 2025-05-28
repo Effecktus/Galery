@@ -1,47 +1,32 @@
 const { Genre, Artwork } = require('../models');
 const { Op, ValidationError } = require('sequelize');
-const sequelize = require('../models').sequelize;
 
 // Создание нового жанра
 exports.createGenre = async (req, res) => {
   try {
-    // Проверяем, существует ли жанр с таким именем
-    if (req.body.name) {
-      const existingGenre = await Genre.findOne({
-        where: { name: req.body.name }
-      });
-      
-      if (existingGenre) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Жанр с таким именем уже существует'
-        });
-      }
-    }
+      const { name } = req.body; // Явно указываем ожидаемые поля
+      const newGenre = await Genre.create({ name });
 
-    const newGenre = await Genre.create(req.body);
-    res.status(201).json({
-      status: 'success',
-      message: 'Жанр успешно создан',
-      data: {
-        genre: newGenre
-      }
-    });
-  } catch(err) {
-    if (err instanceof ValidationError) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Ошибка валидации данных',
-        errors: err.errors.map(e => ({
-          field: e.path,
-          message: e.message
-        }))
+      res.status(201).json({
+          status: 'success',
+          message: 'Жанр успешно создан',
+          data: { genre: newGenre }
       });
-    }
-    res.status(400).json({
-      status: 'error',
-      message: 'Не удалось создать жанр: ' + err.message
-    });      
+  } catch (err) {
+      if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
+          return res.status(400).json({
+              status: 'error',
+              message: 'Ошибка валидации данных',
+              errors: err.errors.map(e => ({
+                  field: e.path,
+                  message: e.message
+              }))
+          });
+      }
+      res.status(500).json({
+          status: 'error',
+          message: 'Не удалось создать жанр: ' + err.message
+      });
   }
 };
 

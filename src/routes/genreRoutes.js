@@ -15,8 +15,8 @@ router.use(logRequest);
 router.get('/', genreController.getAllGenres);
 router.get('/:id', validateGenreId, validate, genreController.getGenre);
 
-router.use(auth.protect);
-router.use(auth.restrictTo('admin', 'manager'));
+// router.use(auth.protect);
+// router.use(auth.restrictTo('admin', 'manager'));
 
 router.post('/', validateGenre, validate, genreController.createGenre);
 router.patch('/:id', validateGenreId, validateGenreUpdate, validate, genreController.updateGenre);

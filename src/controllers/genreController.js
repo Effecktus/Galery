@@ -33,10 +33,6 @@ exports.createGenre = async (req, res) => {
 // Получение всех жанров
 exports.getAllGenres = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const offset = (page - 1) * limit;
-
     const where = {};
     
     // Фильтрация по названию
@@ -53,8 +49,6 @@ exports.getAllGenres = async (req, res) => {
 
     const { count, rows: genres } = await Genre.findAndCountAll({
       where,
-      limit,
-      offset,
       order: [['name', 'ASC']],
       include: [{
         model: Artwork,
@@ -75,13 +69,7 @@ exports.getAllGenres = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        genres: genresWithStats,
-        pagination: {
-          total: count,
-          page,
-          pages: Math.ceil(count / limit),
-          limit
-        }
+        genres: genresWithStats
       }
     });
   } catch(err) {
@@ -101,11 +89,11 @@ exports.getGenre = async (req, res) => {
         attributes: ['id', 'title', 'creation_year', 'image_path', 'author_id', 'style_id'],
         include: [
           {
-            model: Author, // Заменено с Artwork.sequelize.models.Author
+            model: Author,
             attributes: ['id', 'surname', 'first_name', 'patronymic']
           },
           {
-            model: Style, // Заменено с Artwork.sequelize.models.Style
+            model: Style,
             attributes: ['id', 'name']
           }
         ]
@@ -254,13 +242,18 @@ exports.deleteGenre = async (req, res) => {
 
     // Проверяем, есть ли произведения с этим жанром
     if (genre.Artworks && genre.Artworks.length > 0) {
+      console.log(`Cannot delete genre ${genre.id}: has ${genre.Artworks.length} artworks`);
       return res.status(400).json({
         status: 'error',
-        message: 'Невозможно удалить жанр, который используется в произведениях'
+        message: 'Невозможно удалить жанр, который используется в произведениях',
+        data: {
+          artworksCount: genre.Artworks.length
+        }
       });
     }
 
     await genre.destroy();
+    console.log(`Genre ${genre.id} successfully deleted`);
 
     res.status(200).json({
       status: 'success',
@@ -268,6 +261,7 @@ exports.deleteGenre = async (req, res) => {
       data: null
     });
   } catch(err) {
+    console.error('Error in deleteGenre:', err);
     res.status(500).json({
       status: 'error',
       message: 'Ошибка при удалении жанра: ' + err.message

@@ -1,4 +1,5 @@
 const path = require('path');
+const cookieParser = require('cookie-parser');
 
 // Загружаем переменные окружения
 if (process.env.NODE_ENV === 'test') {
@@ -12,6 +13,8 @@ const session = require('express-session');
 const cors = require('cors');
 const expressLayouts = require('express-ejs-layouts');
 const db = require('./models');
+const setUser = require('./middleware/setUser');
+const authController = require('./controllers/authController');
 
 const app = express();
 
@@ -23,6 +26,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(cookieParser());
 
 // Session configuration
 app.use(session({
@@ -48,6 +52,9 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(expressLayouts);
 app.set('layout', 'layouts/main');
+
+// Устанавливаем пользователя в res.locals
+app.use(setUser);
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
@@ -77,66 +84,66 @@ app.get('/', (req, res) => {
     });
 });
 
-// app.get('/login', (req, res) => {
-//     if (res.locals.user) {
-//         return res.redirect('/');
-//     }
-//     res.render('auth/login', { 
-//         title: 'Вход',
-//         user: null
-//     });
-// });
+app.get('/auth/login', (req, res) => {
+    if (res.locals.user) {
+        return res.redirect('/admin');
+    }
+    res.render('auth/login', { 
+        title: 'Вход',
+        user: null
+    });
+});
 
-// app.get('/register', (req, res) => {
-//     if (res.locals.user) {
-//         return res.redirect('/');
-//     }
-//     res.render('auth/register', { 
-//         title: 'Регистрация',
-//         user: null
-//     });
-// });
+app.post('/auth/login', authController.login);
 
-// app.get('/exhibitions', (req, res) => {
-//     res.render('exhibitions/index', { 
-//         title: 'Выставки',
-//         user: res.locals.user || null
-//     });
-// });
+app.get('/auth/register', (req, res) => {
+    if (res.locals.user) {
+        return res.redirect('/');
+    }
+    res.render('auth/register', { 
+        title: 'Регистрация',
+        user: null
+    });
+});
 
-// app.get('/artworks', (req, res) => {
-//     res.render('artworks/index', { 
-//         title: 'Картины',
-//         user: res.locals.user || null
-//     });
-// });
+app.post('/auth/register', authController.register);
 
-// app.get('/tickets', protect, (req, res) => {
-//     res.render('tickets/index', {
-//         title: 'Мои билеты',
-//         user: res.locals.user
-//     });
-// });
+app.get('/auth/logout', (req, res) => {
+    res.clearCookie('token');
+    res.redirect('/auth/login');
+});
 
-// app.get('/admin/users', protect, (req, res) => {
-//     if (req.user.role !== 'admin') {
-//         return res.status(403).render('error', {
-//             title: 'Доступ запрещён',
-//             message: 'Требуются права администратора',
-//             error: { status: 403 },
-//             user: res.locals.user
-//         });
-//     }
-//     res.render('admin/users', {
-//         title: 'Управление пользователями',
-//         user: res.locals.user
-//     });
-// });
+app.get('/admin', (req, res) => {
+    console.log('Admin route accessed. User:', res.locals.user);
+    if (!res.locals.user || res.locals.user.role !== 'admin') {
+        console.log('Access denied. User role:', res.locals.user?.role);
+        return res.status(403).render('error', {
+            title: 'Доступ запрещён',
+            message: 'Требуются права администратора',
+            error: { status: 403 },
+            user: res.locals.user
+        });
+    }
+    console.log('Access granted. Rendering admin panel');
+    res.render('admin/index', {
+        title: 'Панель администратора',
+        user: res.locals.user
+    });
+});
 
-app.get('/genres/manage', (req, res) => {
-    res.render('genres', {
+// Маршрут для страницы управления жанрами
+app.get('/admin/genres', (req, res) => {
+    if (!res.locals.user || res.locals.user.role !== 'admin') {
+        return res.status(403).render('error', {
+            title: 'Доступ запрещён',
+            message: 'Требуются права администратора',
+            error: { status: 403 },
+            user: res.locals.user
+        });
+    }
+    res.render('admin/genres', {
         title: 'Управление жанрами',
-        user: res.locals.user || null
+        user: res.locals.user
     });
 });
 
@@ -146,8 +153,7 @@ app.use((req, res) => {
         title: 'Страница не найдена',
         message: 'Запрашиваемая страница не существует',
         error: { status: 404 },
-        user: res.locals.user || null,
-        status: 'error'
+        user: res.locals.user || null
     });
 });
 
@@ -158,8 +164,7 @@ app.use((err, req, res, next) => {
         title: 'Ошибка',
         message: err.message || 'Что-то пошло не так',
         error: process.env.NODE_ENV === 'development' ? err : {},
-        user: res.locals.user || null,
-        status: 'error'
+        user: res.locals.user || null
     });
 });
 

@@ -27,33 +27,75 @@ const signRefreshToken = (userId) => {
 };
 
 // Функция для отправки ответа с токенами
-const createSendToken = (user, statusCode, res) => {
+const createSendToken = (user, statusCode, res, req) => {
   const token = signToken(user.id);
   const refreshToken = signRefreshToken(user.id);
   
-  res.status(statusCode).json({
-    status: 'success',
-    data: {
-      user: filterSensitiveData(user),
-      token,
-      refreshToken
-    }
+  console.log('Creating token for user:', user.email, 'Role:', user.role);
+  
+  // Устанавливаем куки
+  res.cookie('token', token, {
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 часа
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production'
   });
+
+  // Для API запросов отправляем JSON
+  if (req && (req.xhr || req.headers.accept?.includes('application/json'))) {
+    return res.status(statusCode).json({
+      status: 'success',
+      data: {
+        user: filterSensitiveData(user),
+        token,
+        refreshToken
+      }
+    });
+  }
+
+  // Для веб-запросов делаем редирект в зависимости от роли
+  console.log('Redirecting user with role:', user.role);
+  if (user.role === 'admin') {
+    res.redirect('/admin');
+  } else {
+    res.redirect('/');
+  }
 };
 
 // Регистрация нового пользователя
 exports.register = async (req, res) => {
   try {
-    const { email, password, surname, first_name, patronymic } = req.body;
+    const { email, password, password_confirm, surname, first_name, patronymic } = req.body;
+
+    // Проверяем совпадение паролей
+    if (password !== password_confirm) {
+      if (req.xhr || req.headers.accept.includes('application/json')) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Пароли не совпадают'
+        });
+      }
+      return res.render('auth/register', {
+        title: 'Регистрация',
+        error: 'Пароли не совпадают',
+        user: null
+      });
+    }
 
     validateEmail(email);
     validatePassword(password);
 
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Пользователь с таким email уже существует'
+      if (req.xhr || req.headers.accept.includes('application/json')) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Пользователь с таким email уже существует'
+        });
+      }
+      return res.render('auth/register', {
+        title: 'Регистрация',
+        error: 'Пользователь с таким email уже существует',
+        user: null
       });
     }
 
@@ -66,24 +108,19 @@ exports.register = async (req, res) => {
       role: 'user'
     });
 
-    createSendToken(newUser, 201, res);
+    createSendToken(newUser, 201, res, req);
   } catch (err) {
-    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({
-        status: 'error',
-        message: err.errors[0].message
-      });
-    }
-    if (err.message.includes('Пароль') || err.message.includes('email')) {
-      return res.status(400).json({
-        status: 'error',
-        message: err.message
-      });
-    }
     console.error('Registration error:', err);
-    res.status(500).json({
-      status: 'error',
-      message: 'Внутренняя ошибка сервера'
+    if (req.xhr || req.headers.accept.includes('application/json')) {
+      return res.status(500).json({
+        status: 'error',
+        message: 'Внутренняя ошибка сервера'
+      });
+    }
+    res.render('auth/register', {
+      title: 'Регистрация',
+      error: 'Произошла ошибка при регистрации',
+      user: null
     });
   }
 };
@@ -94,26 +131,47 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Пожалуйста, укажите email и пароль'
+      if (req.xhr || req.headers.accept?.includes('application/json')) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Пожалуйста, укажите email и пароль'
+        });
+      }
+      return res.render('auth/login', {
+        title: 'Вход',
+        error: 'Пожалуйста, укажите email и пароль',
+        user: null
       });
     }
 
     const user = await User.findOne({ where: { email } });
     if (!user || !(await user.checkPassword(password))) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Неверный email или пароль'
+      if (req.xhr || req.headers.accept?.includes('application/json')) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'Неверный email или пароль'
+        });
+      }
+      return res.render('auth/login', {
+        title: 'Вход',
+        error: 'Неверный email или пароль',
+        user: null
       });
     }
 
-    createSendToken(user, 200, res);
+    createSendToken(user, 200, res, req);
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({
-      status: 'error',
-      message: 'Внутренняя ошибка сервера'
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.status(500).json({
+        status: 'error',
+        message: 'Внутренняя ошибка сервера'
+      });
+    }
+    res.render('auth/login', {
+      title: 'Вход',
+      error: 'Произошла ошибка при входе',
+      user: null
     });
   }
 };
@@ -140,7 +198,7 @@ exports.refreshToken = async (req, res) => {
       });
     }
 
-    createSendToken(user, 200, res);
+    createSendToken(user, 200, res, req);
   } catch (err) {
     if (err.name === 'JsonWebTokenError') {
       return res.status(401).json({
@@ -164,10 +222,18 @@ exports.refreshToken = async (req, res) => {
 
 // Выход пользователя
 exports.logout = (req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'Выход выполнен успешно'
+  res.cookie('token', 'loggedout', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true
   });
+
+  if (req.xhr || req.headers.accept.includes('application/json')) {
+    return res.status(200).json({
+      status: 'success',
+      message: 'Выход выполнен успешно'
+    });
+  }
+  res.redirect('/auth/login');
 };
 
 // Изменение пароля
@@ -194,7 +260,7 @@ exports.changePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    createSendToken(user, 200, res);
+    createSendToken(user, 200, res, req);
   } catch (err) {
     if (err.message.includes('Пароль')) {
       return res.status(400).json({

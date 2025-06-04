@@ -1,5 +1,6 @@
 const { validationResult } = require('express-validator');
 const { body, param } = require('express-validator');
+const { Genre, Artwork, Exhibition, Author, Style } = require('../models');
 
 const validate = (req, res, next) => {
     const errors = validationResult(req);

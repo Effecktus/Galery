@@ -11,12 +11,14 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
+        <% if (locals.user && user.role === 'user') { %>
         <li class="nav-item">
           <a class="nav-link" href="/exhibitions">Выставки</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/artworks">Картины</a>
         </li>
+        <% } %>
       </ul>
       <ul class="navbar-nav">
         <% if (locals.user) { %> <% if (user.role === 'admin') { %>
@@ -32,14 +34,14 @@
           <a class="nav-link" href="/profile">Профиль</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/logout">Выйти</a>
+          <a class="nav-link" href="/auth/logout">Выйти</a>
         </li>
         <% } else { %>
         <li class="nav-item">
-          <a class="nav-link" href="/login">Войти</a>
+          <a class="nav-link" href="/auth/login">Войти</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/register">Регистрация</a>
+          <a class="nav-link" href="/auth/register">Регистрация</a>
         </li>
         <% } %>
       </ul>

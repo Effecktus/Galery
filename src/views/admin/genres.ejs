@@ -1,0 +1,175 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Управление жанрами</h1>
+    <button
+      type="button"
+      class="btn btn-primary"
+      data-bs-toggle="modal"
+      data-bs-target="#addGenreModal"
+    >
+      <i class="fas fa-plus"></i> Добавить жанр
+    </button>
+  </div>
+
+  <!-- Поисковая строка -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="input-group">
+        <input
+          type="text"
+          id="searchInput"
+          class="form-control"
+          placeholder="Поиск жанров..."
+          aria-label="Поиск жанров"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- Таблица жанров -->
+  <div class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr>
+          <th class="sortable" data-column="id" style="cursor: pointer">ID</th>
+          <th class="sortable" data-column="name" style="cursor: pointer">
+            Название
+          </th>
+          <th class="sortable" data-column="artworks" style="cursor: pointer">
+            Количество произведений
+          </th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="genresTableBody">
+        <!-- Данные будут загружены через JavaScript -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Модальное окно добавления жанра -->
+<div
+  class="modal fade"
+  id="addGenreModal"
+  tabindex="-1"
+  aria-labelledby="addGenreModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addGenreModalLabel">Добавить жанр</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="addGenreForm">
+          <div class="mb-3">
+            <label for="genreName" class="form-label">Название жанра</label>
+            <input type="text" class="form-control" id="genreName" required />
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Отмена
+        </button>
+        <button type="button" class="btn btn-primary" id="saveGenreBtn">
+          Сохранить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно редактирования жанра -->
+<div
+  class="modal fade"
+  id="editGenreModal"
+  tabindex="-1"
+  aria-labelledby="editGenreModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editGenreModalLabel">Редактировать жанр</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="editGenreForm">
+          <input type="hidden" id="editGenreId" />
+          <div class="mb-3">
+            <label for="editGenreName" class="form-label">Название жанра</label>
+            <input
+              type="text"
+              class="form-control"
+              id="editGenreName"
+              required
+            />
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Отмена
+        </button>
+        <button type="button" class="btn btn-primary" id="updateGenreBtn">
+          Сохранить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div
+  class="modal fade"
+  id="deleteGenreModal"
+  tabindex="-1"
+  aria-labelledby="deleteGenreModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteGenreModalLabel">
+          Подтверждение удаления
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <p>Вы уверены, что хотите удалить этот жанр?</p>
+        <p class="text-danger">
+          Внимание: Если с жанром связаны произведения, удаление будет
+          невозможно.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Отмена
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+          Удалить
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/genres.js"></script>

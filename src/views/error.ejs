@@ -1,51 +1,60 @@
-<div class="container mt-5">
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card border-danger">
-        <div class="card-header bg-danger text-white">
-          <h4 class="mb-0"><%= title %></h4>
-        </div>
-        <div class="card-body">
-          <div class="text-center mb-4">
-            <% if (error.status === 404) { %>
-            <i
-              class="fas fa-exclamation-circle text-danger"
-              style="font-size: 5rem"
-            ></i>
-            <% } else if (error.status === 403) { %>
-            <i class="fas fa-lock text-danger" style="font-size: 5rem"></i>
-            <% } else { %>
-            <i
-              class="fas fa-exclamation-triangle text-danger"
-              style="font-size: 5rem"
-            ></i>
-            <% } %>
-          </div>
-
-          <h5 class="card-title text-center mb-4"><%= message %></h5>
-
-          <% if (error.status) { %>
-          <p class="text-center text-muted">Код ошибки: <%= error.status %></p>
-          <% } %> <% if (process.env.NODE_ENV === 'development' && error.stack)
-          { %>
-          <div class="mt-4">
-            <h6>Детали ошибки (только для разработки):</h6>
-            <pre class="bg-light p-3 rounded"><%= error.stack %></pre>
-          </div>
+<div class="content-container">
+  <div class="form-container">
+    <div class="card">
+      <div class="card-header" style="background-color: #dc3545">
+        <h4><%= title %></h4>
+      </div>
+      <div class="card-body">
+        <div style="text-align: center; margin-bottom: 2rem">
+          <% if (error.status === 404) { %>
+          <i
+            class="fas fa-exclamation-circle"
+            style="font-size: 5rem; color: #dc3545"
+          ></i>
+          <% } else if (error.status === 403) { %>
+          <i class="fas fa-lock" style="font-size: 5rem; color: #dc3545"></i>
+          <% } else { %>
+          <i
+            class="fas fa-exclamation-triangle"
+            style="font-size: 5rem; color: #dc3545"
+          ></i>
           <% } %>
+        </div>
 
-          <div class="text-center mt-4">
-            <% if (user && user.role === 'admin') { %>
-            <a href="/admin" class="btn btn-primary">
-              <i class="fas fa-tachometer-alt"></i> Вернуться в панель
-              администратора
-            </a>
-            <% } else { %>
-            <a href="/" class="btn btn-primary">
-              <i class="fas fa-home"></i> Вернуться на главную
-            </a>
-            <% } %>
-          </div>
+        <h5 style="text-align: center; margin-bottom: 2rem"><%= message %></h5>
+
+        <% if (error.status) { %>
+        <p style="text-align: center; color: #666">
+          Код ошибки: <%= error.status %>
+        </p>
+        <% } %> <% if (process.env.NODE_ENV === 'development' && error.stack) {
+        %>
+        <div style="margin-top: 2rem">
+          <h6>Детали ошибки (только для разработки):</h6>
+          <pre
+            style="
+              background-color: #f8f9fa;
+              padding: 1rem;
+              border-radius: 4px;
+              overflow-x: auto;
+            "
+          >
+<%= error.stack %></pre
+          >
+        </div>
+        <% } %>
+
+        <div style="text-align: center; margin-top: 2rem">
+          <% if (user && user.role === 'admin') { %>
+          <a href="/admin" class="btn btn-primary">
+            <i class="fas fa-tachometer-alt"></i> Вернуться в панель
+            администратора
+          </a>
+          <% } else { %>
+          <a href="/" class="btn btn-primary">
+            <i class="fas fa-home"></i> Вернуться на главную
+          </a>
+          <% } %>
         </div>
       </div>
     </div>

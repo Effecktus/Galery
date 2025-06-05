@@ -115,10 +115,13 @@ function validateForm(form) {
     return isValid;
 }
 
-// Инициализация всех тултипов Bootstrap
-document.addEventListener('DOMContentLoaded', () => {
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    const mainNav = document.querySelector('.main-nav');
+
+    if (menuToggle && mainNav) {
+        menuToggle.addEventListener('click', function() {
+            mainNav.classList.toggle('active');
+        });
+    }
 }); 

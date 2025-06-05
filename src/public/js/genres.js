@@ -1,6 +1,6 @@
 // Глобальные переменные
 let currentSort = {
-    column: 'name',
+    column: 'id',
     direction: 'asc'
 };
 
@@ -148,7 +148,7 @@ function addGenre(name) {
         success: function(response) {
             if (response.status === "success") {
                 // Закрываем модальное окно и очищаем форму
-                $('#addGenreModal').modal('hide');
+                $('#addGenreModal').removeClass('active');
                 $('#genreName').val('');
 
                 // Перезагружаем список жанров
@@ -172,7 +172,7 @@ function addGenre(name) {
 function editGenre(id, name) {
     $('#editGenreId').val(id);
     $('#editGenreName').val(name);
-    $('#editGenreModal').modal('show');
+    $('#editGenreModal').addClass('active');
 }
 
 // Функция обновления жанра
@@ -185,7 +185,7 @@ function updateGenre(id, name) {
         success: function(response) {
             if (response.status === "success") {
                 // Закрываем модальное окно
-                $('#editGenreModal').modal('hide');
+                $('#editGenreModal').removeClass('active');
 
                 // Перезагружаем список жанров
                 loadGenres();
@@ -211,13 +211,8 @@ function deleteGenre(id) {
         method: 'DELETE',
         success: function(response) {
             if (response.status === "success") {
-                // Закрываем модальное окно и возвращаем фокус
-                const modal = $('#deleteGenreModal');
-                modal.on('hidden.bs.modal', function () {
-                    // Возвращаем фокус на первый элемент страницы
-                    $('body').focus();
-                });
-                modal.modal('hide');
+                // Закрываем модальное окно
+                $('#deleteGenreModal').removeClass('active');
 
                 // Перезагружаем список жанров
                 loadGenres();
@@ -226,7 +221,7 @@ function deleteGenre(id) {
             }
         },
         error: function(xhr, status, error) {
-            console.error("Error deleting genre:", error);
+            console.error("Ошибка при удалении жанра:", error);
             console.log("Response:", xhr.responseJSON);
             
             if (xhr.status === 401) {
@@ -253,20 +248,6 @@ function deleteGenre(id) {
 
 // Функция подтверждения удаления
 function confirmDelete(id) {
-    const modal = $('#deleteGenreModal');
     $('#confirmDeleteBtn').data('genreId', id);
-    
-    // Обработчик открытия модального окна
-    modal.on('shown.bs.modal', function () {
-        // Устанавливаем фокус на кнопку "Отмена"
-        $(this).find('.btn-secondary').focus();
-    });
-    
-    // Обработчик закрытия модального окна
-    modal.on('hidden.bs.modal', function () {
-        // Возвращаем фокус на кнопку, которая открыла модальное окно
-        $(`button[onclick="confirmDelete(${id})"]`).focus();
-    });
-    
-    modal.modal('show');
+    $('#deleteGenreModal').addClass('active');
 } 

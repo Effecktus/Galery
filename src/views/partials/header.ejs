@@ -1,16 +1,11 @@
-<header class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container">
-    <a class="navbar-brand" href="/">Художественная галерея</a>
-    <button
-      class="navbar-toggler"
-      type="button"
-      data-bs-toggle="collapse"
-      data-bs-target="#navbarNav"
-    >
-      <span class="navbar-toggler-icon"></span>
+<header class="site-header">
+  <div class="header-container">
+    <a class="site-logo" href="/">Художественная галерея</a>
+    <button class="menu-toggle" type="button" aria-label="Toggle navigation">
+      <span class="menu-icon"></span>
     </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto">
+    <nav class="main-nav">
+      <ul class="nav-list">
         <% if (locals.user && user.role === 'user') { %>
         <li class="nav-item">
           <a class="nav-link" href="/exhibitions">Выставки</a>
@@ -20,7 +15,7 @@
         </li>
         <% } %>
       </ul>
-      <ul class="navbar-nav">
+      <ul class="nav-list">
         <% if (locals.user) { %> <% if (user.role === 'admin') { %>
         <li class="nav-item">
           <a class="nav-link" href="/admin">Панель администратора</a>
@@ -45,6 +40,6 @@
         </li>
         <% } %>
       </ul>
-    </div>
+    </nav>
   </div>
 </header>

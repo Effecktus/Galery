@@ -1,95 +1,61 @@
-<div class="container mt-5">
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card">
-        <div class="card-header bg-primary text-white">
-          <h4 class="mb-0">Регистрация</h4>
-        </div>
-        <div class="card-body">
-          <% if (locals.error) { %>
-          <div class="alert alert-danger"><%= error %></div>
-          <% } %>
+<div class="content-container">
+  <div class="form-container">
+    <div class="card">
+      <div class="card-header">
+        <h4>Регистрация</h4>
+      </div>
+      <div class="card-body">
+        <% if (locals.error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+        <% } %>
 
-          <form action="/auth/register" method="POST">
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label for="surname" class="form-label">Фамилия</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="surname"
-                  name="surname"
-                  required
-                />
-              </div>
-
-              <div class="col-md-4 mb-3">
-                <label for="first_name" class="form-label">Имя</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="first_name"
-                  name="first_name"
-                  required
-                />
-              </div>
-
-              <div class="col-md-4 mb-3">
-                <label for="patronymic" class="form-label">Отчество</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="patronymic"
-                  name="patronymic"
-                />
-              </div>
+        <form action="/auth/register" method="POST">
+          <div class="grid grid-3">
+            <div class="form-group">
+              <label for="surname">Фамилия</label>
+              <input type="text" id="surname" name="surname" required />
             </div>
 
-            <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input
-                type="email"
-                class="form-control"
-                id="email"
-                name="email"
-                required
-              />
+            <div class="form-group">
+              <label for="first_name">Имя</label>
+              <input type="text" id="first_name" name="first_name" required />
             </div>
 
-            <div class="mb-3">
-              <label for="password" class="form-label">Пароль</label>
-              <input
-                type="password"
-                class="form-control"
-                id="password"
-                name="password"
-                required
-              />
+            <div class="form-group">
+              <label for="patronymic">Отчество</label>
+              <input type="text" id="patronymic" name="patronymic" />
             </div>
-
-            <div class="mb-3">
-              <label for="password_confirm" class="form-label"
-                >Подтверждение пароля</label
-              >
-              <input
-                type="password"
-                class="form-control"
-                id="password_confirm"
-                name="password_confirm"
-                required
-              />
-            </div>
-
-            <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-primary">
-                Зарегистрироваться
-              </button>
-            </div>
-          </form>
-
-          <div class="text-center mt-3">
-            <p>Уже есть аккаунт? <a href="/auth/login">Войти</a></p>
           </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Пароль</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+
+          <div class="form-group">
+            <label for="password_confirm">Подтверждение пароля</label>
+            <input
+              type="password"
+              id="password_confirm"
+              name="password_confirm"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary" style="width: 100%">
+              Зарегистрироваться
+            </button>
+          </div>
+        </form>
+
+        <div style="text-align: center; margin-top: 1rem">
+          <p>Уже есть аккаунт? <a href="/auth/login">Войти</a></p>
         </div>
       </div>
     </div>

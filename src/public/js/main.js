@@ -82,6 +82,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // Обработчик для кнопки выхода
+    const logoutLink = document.querySelector('a[data-action="logout"]');
+    if (logoutLink) {
+        logoutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/auth/logout';
+        });
+    }
 });
 
 // Функция для загрузки изображений с предпросмотром

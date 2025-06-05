@@ -109,7 +109,18 @@ app.get('/auth/register', (req, res) => {
 app.post('/auth/register', authController.register);
 
 app.get('/auth/logout', (req, res) => {
+    // Очищаем сессию
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Error destroying session:', err);
+        }
+    });
+
+    // Очищаем все куки
     res.clearCookie('token');
+    res.clearCookie('connect.sid');
+
+    // Перенаправляем на страницу входа
     res.redirect('/auth/login');
 });
 
@@ -142,6 +153,22 @@ app.get('/admin/genres', (req, res) => {
         });
     }
     res.render('admin/genres', {
+        title: 'Управление жанрами',
+        user: res.locals.user
+    });
+});
+
+// Маршрут для страницы управления стилями
+app.get('/admin/styles', (req, res) => {
+    if (!res.locals.user || res.locals.user.role !== 'admin') {
+        return res.status(403).render('error', {
+            title: 'Доступ запрещён',
+            message: 'Требуются права администратора',
+            error: { status: 403 },
+            user: res.locals.user
+        });
+    }
+    res.render('admin/styles', {
         title: 'Управление жанрами',
         user: res.locals.user
     });

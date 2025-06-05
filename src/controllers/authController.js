@@ -1,6 +1,5 @@
 const { User, Ticket, Exhibition } = require('../models');
 const jwt = require('jsonwebtoken');
-const { validatePassword, validateEmail } = require('../middleware/validation');
 
 // Функция для фильтрации чувствительных данных
 const filterSensitiveData = (user) => {
@@ -80,9 +79,6 @@ exports.register = async (req, res) => {
         user: null
       });
     }
-
-    validateEmail(email);
-    validatePassword(password);
 
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
@@ -256,7 +252,6 @@ exports.changePassword = async (req, res) => {
       });
     }
 
-    validatePassword(newPassword);
     user.password = newPassword;
     await user.save();
 

@@ -4,27 +4,13 @@ const { Op, ValidationError } = require('sequelize');
 // Создание нового стиля
 exports.createStyle = async (req, res) => {
   try {
-    // Проверяем, существует ли стиль с таким именем
-    if (req.body.name) {
-      const existingStyle = await Style.findOne({
-        where: { name: req.body.name }
-      });
-      
-      if (existingStyle) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Стиль с таким именем уже существует'
-        });
-      }
-    }
+    const { name } = req.body;
+    const newStyle = await Style.create({ name });
 
-    const newStyle = await Style.create(req.body);
     res.status(201).json({
       status: 'success',
       message: 'Стиль успешно создан',
-      data: {
-        style: newStyle
-      }
+      data: { style: newStyle }
     });
   } catch(err) {
     if (err instanceof ValidationError) {
@@ -37,7 +23,7 @@ exports.createStyle = async (req, res) => {
         }))
       });
     }
-    res.status(400).json({
+    res.status(500).json({
       status: 'error',
       message: 'Не удалось создать стиль: ' + err.message
     });      
@@ -47,10 +33,6 @@ exports.createStyle = async (req, res) => {
 // Получение всех стилей
 exports.getAllStyles = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const offset = (page - 1) * limit;
-
     const where = {};
     
     // Фильтрация по названию
@@ -67,8 +49,6 @@ exports.getAllStyles = async (req, res) => {
 
     const { count, rows: styles } = await Style.findAndCountAll({
       where,
-      limit,
-      offset,
       order: [['name', 'ASC']],
       include: [{
         model: Artwork,
@@ -89,13 +69,7 @@ exports.getAllStyles = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        styles: stylesWithStats,
-        pagination: {
-          total: count,
-          page,
-          pages: Math.ceil(count / limit),
-          limit
-        }
+        styles: stylesWithStats
       }
     });
   } catch(err) {
@@ -115,11 +89,11 @@ exports.getStyle = async (req, res) => {
         attributes: ['id', 'title', 'creation_year', 'image_path', 'author_id', 'genre_id'],
         include: [
           {
-            model: Author, // Заменено с Artwork.sequelize.models.Author
+            model: Author,
             attributes: ['id', 'surname', 'first_name', 'patronymic']
           },
           {
-            model: Genre, // Заменено с Artwork.sequelize.models.Genre
+            model: Genre,
             attributes: ['id', 'name']
           }
         ]
@@ -155,13 +129,18 @@ exports.getStyle = async (req, res) => {
           acc[authorId].count++;
           return acc;
         }, {}),
-        artworks_by_style: { // Добавлено для консистентности
-          [style.id]: {
-            id: style.id,
-            name: style.name,
-            count: style.Artworks.length
+        artworks_by_genres: style.Artworks.reduce((acc, artwork) => {
+          const genreId = artwork.Genre.id;
+          if (!acc[genreId]) {
+            acc[genreId] = {
+              id: genreId,
+              name: artwork.Genre.name,
+              count: 0
+            };
           }
-        }
+          acc[genreId].count++;
+          return acc;
+        }, {})
       }
     };
     
@@ -265,7 +244,10 @@ exports.deleteStyle = async (req, res) => {
     if (style.Artworks && style.Artworks.length > 0) {
       return res.status(400).json({
         status: 'error',
-        message: 'Невозможно удалить стиль, который используется в произведениях'
+        message: 'Невозможно удалить стиль, который используется в произведениях',
+        data : {
+          artworksCount: style.Artwork.length
+        }
       });
     }
 

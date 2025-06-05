@@ -10,13 +10,13 @@ const logRequest = (req, res, next) => {
   next();
 };
 
-router.use(logRequest);
 
 router.get('/', styleController.getAllStyles);
 router.get('/:id', validateStyleId, validate, styleController.getStyle);
 
 router.use(auth.protect);
 router.use(auth.restrictTo('admin', 'manager'));
+router.use(logRequest);
 
 router.post('/', validateStyle, validate, styleController.createStyle);
 router.patch('/:id', validateStyleId, validateStyleUpdate, validate, styleController.updateStyle);

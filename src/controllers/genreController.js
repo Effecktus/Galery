@@ -4,7 +4,7 @@ const { Op, ValidationError } = require('sequelize');
 // Создание нового жанра
 exports.createGenre = async (req, res) => {
   try {
-      const { name } = req.body; // Явно указываем ожидаемые поля
+      const { name } = req.body;
       const newGenre = await Genre.create({ name });
 
       res.status(201).json({
@@ -13,7 +13,7 @@ exports.createGenre = async (req, res) => {
           data: { genre: newGenre }
       });
   } catch (err) {
-      if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
+      if (err instanceof ValidationError) {
           return res.status(400).json({
               status: 'error',
               message: 'Ошибка валидации данных',
@@ -242,7 +242,6 @@ exports.deleteGenre = async (req, res) => {
 
     // Проверяем, есть ли произведения с этим жанром
     if (genre.Artworks && genre.Artworks.length > 0) {
-      console.log(`Cannot delete genre ${genre.id}: has ${genre.Artworks.length} artworks`);
       return res.status(400).json({
         status: 'error',
         message: 'Невозможно удалить жанр, который используется в произведениях',
@@ -253,7 +252,6 @@ exports.deleteGenre = async (req, res) => {
     }
 
     await genre.destroy();
-    console.log(`Genre ${genre.id} successfully deleted`);
 
     res.status(200).json({
       status: 'success',
@@ -261,7 +259,6 @@ exports.deleteGenre = async (req, res) => {
       data: null
     });
   } catch(err) {
-    console.error('Error in deleteGenre:', err);
     res.status(500).json({
       status: 'error',
       message: 'Ошибка при удалении жанра: ' + err.message

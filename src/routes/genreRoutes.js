@@ -10,14 +10,12 @@ const logRequest = (req, res, next) => {
   next();
 };
 
-router.use(logRequest);
-
 router.get('/', genreController.getAllGenres);
 router.get('/:id', validateGenreId, validate, genreController.getGenre);
 
-// Включаем middleware для аутентификации и авторизации
 router.use(auth.protect);
 router.use(auth.restrictTo('admin'));
+router.use(logRequest);
 
 router.post('/', validateGenre, validate, genreController.createGenre);
 router.patch('/:id', validateGenreId, validateGenreUpdate, validate, genreController.updateGenre);

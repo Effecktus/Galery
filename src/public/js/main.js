@@ -1,12 +1,14 @@
 // Функция для отображения уведомлений
 function showNotification(message, type = 'success') {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    document.querySelector('main').insertAdjacentElement('afterbegin', alertDiv);
+    const alertDiv = $('<div>', {
+        class: `alert alert-${type} alert-dismissible fade show`,
+        html: `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `
+    });
+    
+    $('main').prepend(alertDiv);
     
     // Автоматически скрыть через 5 секунд
     setTimeout(() => {
@@ -14,19 +16,12 @@ function showNotification(message, type = 'success') {
     }, 5000);
 }
 
-// Функция для подтверждения действий
-function confirmAction(message) {
-    return confirm(message);
-}
-
 // Функция для форматирования даты
 function formatDate(dateString) {
     const options = { 
         year: 'numeric', 
         month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        day: 'numeric'
     };
     return new Date(dateString).toLocaleDateString('ru-RU', options);
 }
@@ -39,58 +34,54 @@ function formatPrice(price) {
     }).format(price);
 }
 
-// Обработчик для форм с AJAX
-document.addEventListener('DOMContentLoaded', () => {
-    const ajaxForms = document.querySelectorAll('form[data-ajax="true"]');
-    
-    ajaxForms.forEach(form => {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(form);
-            const submitButton = form.querySelector('[type="submit"]');
-            const originalButtonText = submitButton.innerHTML;
-            
-            try {
-                submitButton.disabled = true;
-                submitButton.innerHTML = 'Загрузка...';
-                
-                const response = await fetch(form.action, {
-                    method: form.method,
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showNotification(data.message || 'Операция выполнена успешно');
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
-                    }
-                } else {
-                    showNotification(data.message || 'Произошла ошибка', 'danger');
+// Инициализация при загрузке страницы
+$(document).ready(function() {
+    // Обработка AJAX форм
+    $('form[data-ajax="true"]').on('submit', function(e) {
+        e.preventDefault();
+        
+        const form = $(this);
+        const formData = new FormData(this);
+        const submitButton = form.find('[type="submit"]');
+        const originalButtonText = submitButton.html();
+        
+        submitButton.prop('disabled', true).html('Загрузка...');
+        
+        $.ajax({
+            url: form.attr('action'),
+            method: form.attr('method'),
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(data) {
+                showNotification(data.message || 'Операция выполнена успешно');
+                if (data.redirect) {
+                    window.location.href = data.redirect;
                 }
-            } catch (error) {
-                showNotification('Произошла ошибка при отправке формы', 'danger');
-                console.error('Form submission error:', error);
-            } finally {
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalButtonText;
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON;
+                showNotification(response?.message || 'Произошла ошибка', 'danger');
+            },
+            complete: function() {
+                submitButton.prop('disabled', false).html(originalButtonText);
             }
         });
     });
 
-    // Обработчик для кнопки выхода
-    const logoutLink = document.querySelector('a[data-action="logout"]');
-    if (logoutLink) {
-        logoutLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.location.href = '/auth/logout';
-        });
-    }
+    // Обработка кнопки выхода
+    $('a[data-action="logout"]').on('click', function(e) {
+        e.preventDefault();
+        window.location.href = '/auth/logout';
+    });
+
+    // Обработка мобильного меню
+    $('.menu-toggle').on('click', function() {
+        $('.main-nav').toggleClass('active');
+    });
 });
 
 // Функция для загрузки изображений с предпросмотром
@@ -105,32 +96,4 @@ function handleImageUpload(input, previewElement) {
         
         reader.readAsDataURL(input.files[0]);
     }
-}
-
-// Функция для валидации форм
-function validateForm(form) {
-    const requiredFields = form.querySelectorAll('[required]');
-    let isValid = true;
-    
-    requiredFields.forEach(field => {
-        if (!field.value.trim()) {
-            field.classList.add('is-invalid');
-            isValid = false;
-        } else {
-            field.classList.remove('is-invalid');
-        }
-    });
-    
-    return isValid;
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const menuToggle = document.querySelector('.menu-toggle');
-    const mainNav = document.querySelector('.main-nav');
-
-    if (menuToggle && mainNav) {
-        menuToggle.addEventListener('click', function() {
-            mainNav.classList.toggle('active');
-        });
-    }
-}); 
+} 

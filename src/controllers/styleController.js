@@ -1,11 +1,10 @@
-const { Style, Artwork } = require('../models');
+const { Style, Artwork, Author, Genre } = require('../models');
 const { Op, ValidationError } = require('sequelize');
 
 // Создание нового стиля
 exports.createStyle = async (req, res) => {
   try {
-    const { name } = req.body;
-    const newStyle = await Style.create({ name });
+    const newStyle = await Style.create(req.body);
 
     res.status(201).json({
       status: 'success',
@@ -33,26 +32,17 @@ exports.createStyle = async (req, res) => {
 // Получение всех стилей
 exports.getAllStyles = async (req, res) => {
   try {
-    const where = {};
-    
     // Фильтрация по названию
+    const where = {};
     if (req.query.name) {
       where.name = { [Op.like]: `%${req.query.name}%` };
     }
 
-    // Фильтрация по наличию произведений
-    if (req.query.has_artworks === 'true') {
-      where['$Artworks.id$'] = { [Op.ne]: null };
-    } else if (req.query.has_artworks === 'false') {
-      where['$Artworks.id$'] = null;
-    }
-
-    const { count, rows: styles } = await Style.findAndCountAll({
+    const styles = await Style.findAll({
       where,
-      order: [['name', 'ASC']],
       include: [{
         model: Artwork,
-        attributes: ['id', 'title', 'creation_year', 'image_path'],
+        attributes: ['id', 'title'],
         required: req.query.has_artworks === 'true'
       }],
       distinct: true
@@ -107,47 +97,10 @@ exports.getStyle = async (req, res) => {
       });
     }
 
-    // Добавляем статистику
-    const styleWithStats = {
-      ...style.toJSON(),
-      statistics: {
-        total_artworks: style.Artworks.length,
-        artworks_by_year: style.Artworks.reduce((acc, artwork) => {
-          const year = artwork.creation_year;
-          acc[year] = (acc[year] || 0) + 1;
-          return acc;
-        }, {}),
-        artworks_by_author: style.Artworks.reduce((acc, artwork) => {
-          const authorId = artwork.Author.id;
-          if (!acc[authorId]) {
-            acc[authorId] = {
-              id: authorId,
-              name: `${artwork.Author.surname} ${artwork.Author.first_name} ${artwork.Author.patronymic || ''}`.trim(),
-              count: 0
-            };
-          }
-          acc[authorId].count++;
-          return acc;
-        }, {}),
-        artworks_by_genres: style.Artworks.reduce((acc, artwork) => {
-          const genreId = artwork.Genre.id;
-          if (!acc[genreId]) {
-            acc[genreId] = {
-              id: genreId,
-              name: artwork.Genre.name,
-              count: 0
-            };
-          }
-          acc[genreId].count++;
-          return acc;
-        }, {})
-      }
-    };
-    
     res.status(200).json({
       status: 'success',
       data: {
-        style: styleWithStats
+        style
       }
     });
   } catch(err) {

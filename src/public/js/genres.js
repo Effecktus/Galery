@@ -157,7 +157,7 @@ function addGenre(name) {
           alert(response.message || "Ошибка при добавлении жанра");
         }
       },
-      error: function(xhr, status, error) {
+      error: function(xhr) {
         if (xhr.status === 401) {
           window.location.href = '/auth/login';
         } else {

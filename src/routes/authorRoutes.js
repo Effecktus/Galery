@@ -10,13 +10,12 @@ const logRequest = (req, res, next) => {
   next();
 };
 
-router.use(logRequest);
-
 router.get('/', authorController.getAllAuthors);
 router.get('/:id', validateAuthorId, validate, authorController.getAuthor);
 
 router.use(auth.protect);
-router.use(auth.restrictTo('admin', 'manager'));
+router.use(auth.restrictTo('admin'));
+router.use(logRequest);
 
 router.post('/', validateAuthor, validate, authorController.createAuthor);
 router.patch('/:id', validateAuthorId, validateAuthorUpdate, validate, authorController.updateAuthor);

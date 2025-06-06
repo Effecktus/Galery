@@ -1,17 +1,15 @@
-const { Author } = require('../models');
-const { Artwork } = require('../models');
+const { Author, Artwork, Style, Genre } = require('../models');
 const { Op, ValidationError } = require('sequelize');
-const sequelize = require('sequelize');
 
 // Создание нового автора
 exports.createAuthor = async (req, res) => {
   try {
     const newAuthor = await Author.create(req.body);
+
     res.status(201).json({
       status: 'success',
-      data: {
-        author: newAuthor
-      }
+      message: 'Автор успешно создан',
+      data: { author: newAuthor }
     });
   } catch(err) {
     if (err instanceof ValidationError) {
@@ -24,30 +22,23 @@ exports.createAuthor = async (req, res) => {
         }))
       });
     }
-    res.status(400).json({
+    res.status(500).json({
       status: 'error',
       message: 'Не удалось создать автора: ' + err.message
-    });
+    });    
   }
 };
 
 // Получение всех авторов
 exports.getAllAuthors = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const offset = (page - 1) * limit;
-
-    // Базовые условия фильтрации
     const where = {};
-    if (req.query.surname) {
-      where.surname = { [Op.like]: `%${req.query.surname}%` };
-    }
-    if (req.query.first_name) {
-      where.first_name = { [Op.like]: `%${req.query.first_name}%` };
-    }
-    if (req.query.patronymic) {
-      where.patronymic = { [Op.like]: `%${req.query.patronymic}%` };
+    if (req.query.name) {
+      where[Op.or] = [
+        { surname: { [Op.like]: `%${req.query.name}%` } },
+        { first_name: { [Op.like]: `%${req.query.name}%` } },
+        { patronymic: { [Op.like]: `%${req.query.name}%` } }
+      ];
     }
 
     // Фильтрация по датам
@@ -84,25 +75,26 @@ exports.getAllAuthors = async (req, res) => {
 
     const { count, rows: authors } = await Author.findAndCountAll({
       where,
-      limit,
-      offset,
-      order: [['surname', 'ASC'], ['first_name', 'ASC']],
       include: [{
         model: Artwork,
-        attributes: ['id', 'title', 'creation_year']
-      }]
+        attributes: ['id', 'title'],
+        required: req.query.has_artworks === 'true'
+      }],
+      distinct: true
     });
+
+    // Добавляем статистику по произведениям
+    const authorsWithStats = authors.map(author => ({
+      ...author.toJSON(),
+      statistics: {
+        total_artworks: author.Artworks ? author.Artworks.length : 0
+      }
+    }));
 
     res.status(200).json({
       status: 'success',
       data: {
-        authors,
-        pagination: {
-          total: count,
-          page,
-          pages: Math.ceil(count / limit),
-          limit
-        }
+        authors: authorsWithStats
       }
     });
   } catch(err) {
@@ -122,11 +114,11 @@ exports.getAuthor = async (req, res) => {
         attributes: ['id', 'title', 'creation_year', 'image_path', 'style_id', 'genre_id'],
         include: [
           {
-            model: Style, // Заменено с sequelize.models.Style
+            model: Style,
             attributes: ['name']
           },
           {
-            model: Genre, // Заменено с sequelize.models.Genre
+            model: Genre,
             attributes: ['name']
           }
         ]
@@ -178,14 +170,14 @@ exports.updateAuthor = async (req, res) => {
       }
     }
 
-    const [updated] = await Author.update(req.body, {
-      where: { id: req.params.id }
-    });
+    // Обновляем автора
+    await author.update(req.body);
 
+    // Получаем обновленного автора
     const updatedAuthor = await Author.findByPk(req.params.id, {
       include: [{
         model: Artwork,
-        attributes: ['id', 'title', 'creation_year']
+        attributes: ['id', 'title']
       }]
     });
 
@@ -216,7 +208,6 @@ exports.updateAuthor = async (req, res) => {
 // Удаление автора по ID
 exports.deleteAuthor = async (req, res) => {
   try {
-    // Проверяем, есть ли у автора произведения
     const author = await Author.findByPk(req.params.id, {
       include: [{
         model: Artwork,
@@ -231,10 +222,14 @@ exports.deleteAuthor = async (req, res) => {
       });
     }
 
+    // Проверяем, есть ли у автора произведения
     if (author.Artworks && author.Artworks.length > 0) {
       return res.status(400).json({
         status: 'error',
-        message: 'Невозможно удалить автора, у которого есть произведения'
+        message: 'Невозможно удалить автора, у которого есть произведения',
+        data: {
+          artworksCount: author.Artworks.length
+        }
       });
     }
 

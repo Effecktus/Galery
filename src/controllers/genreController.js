@@ -1,11 +1,10 @@
-const { Genre, Artwork } = require('../models');
+const { Genre, Artwork, Author, Style } = require('../models');
 const { Op, ValidationError } = require('sequelize');
 
 // Создание нового жанра
 exports.createGenre = async (req, res) => {
   try {
-      const { name } = req.body;
-      const newGenre = await Genre.create({ name });
+      const newGenre = await Genre.create(req.body);
 
       res.status(201).json({
           status: 'success',
@@ -33,26 +32,17 @@ exports.createGenre = async (req, res) => {
 // Получение всех жанров
 exports.getAllGenres = async (req, res) => {
   try {
-    const where = {};
-    
     // Фильтрация по названию
+    const where = {};
     if (req.query.name) {
       where.name = { [Op.like]: `%${req.query.name}%` };
     }
 
-    // Фильтрация по наличию произведений
-    if (req.query.has_artworks === 'true') {
-      where['$Artworks.id$'] = { [Op.ne]: null };
-    } else if (req.query.has_artworks === 'false') {
-      where['$Artworks.id$'] = null;
-    }
-
-    const { count, rows: genres } = await Genre.findAndCountAll({
+    const genres = await Genre.findAll({
       where,
-      order: [['name', 'ASC']],
       include: [{
         model: Artwork,
-        attributes: ['id', 'title', 'creation_year', 'image_path'],
+        attributes: ['id', 'title'],
         required: req.query.has_artworks === 'true'
       }],
       distinct: true
@@ -106,48 +96,11 @@ exports.getGenre = async (req, res) => {
         message: 'Жанр с указанным ID не найден'
       });
     }
-
-    // Добавляем статистику
-    const genreWithStats = {
-      ...genre.toJSON(),
-      statistics: {
-        total_artworks: genre.Artworks.length,
-        artworks_by_year: genre.Artworks.reduce((acc, artwork) => {
-          const year = artwork.creation_year;
-          acc[year] = (acc[year] || 0) + 1;
-          return acc;
-        }, {}),
-        artworks_by_author: genre.Artworks.reduce((acc, artwork) => {
-          const authorId = artwork.Author.id;
-          if (!acc[authorId]) {
-            acc[authorId] = {
-              id: authorId,
-              name: `${artwork.Author.surname} ${artwork.Author.first_name} ${artwork.Author.patronymic || ''}`.trim(),
-              count: 0
-            };
-          }
-          acc[authorId].count++;
-          return acc;
-        }, {}),
-        artworks_by_style: genre.Artworks.reduce((acc, artwork) => {
-          const styleId = artwork.Style.id;
-          if (!acc[styleId]) {
-            acc[styleId] = {
-              id: styleId,
-              name: artwork.Style.name,
-              count: 0
-            };
-          }
-          acc[styleId].count++;
-          return acc;
-        }, {})
-      }
-    };
     
     res.status(200).json({
       status: 'success',
       data: {
-        genre: genreWithStats
+        genre
       }
     });
   } catch(err) {
@@ -194,7 +147,7 @@ exports.updateGenre = async (req, res) => {
     const updatedGenre = await Genre.findByPk(req.params.id, {
       include: [{
         model: Artwork,
-        attributes: ['id', 'title', 'creation_year', 'image_path']
+        attributes: ['id', 'title']
       }]
     });
 

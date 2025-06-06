@@ -41,44 +41,12 @@ exports.getAllAuthors = async (req, res) => {
       ];
     }
 
-    // Фильтрация по датам
-    if (req.query.birth_year) {
-      const year = parseInt(req.query.birth_year, 10);
-      if (isNaN(year)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректный год рождения'
-        });
-      }
-      where.date_of_birth = {
-        [Op.between]: [
-          new Date(year, 0, 1),
-          new Date(year, 11, 31)
-        ]
-      };
-    }
-    if (req.query.death_year) {
-      const year = parseInt(req.query.death_year, 10);
-      if (isNaN(year)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректный год смерти'
-        });
-      }
-      where.date_of_death = {
-        [Op.between]: [
-          new Date(year, 0, 1),
-          new Date(year, 11, 31)
-        ]
-      };
-    }
-
-    const { count, rows: authors } = await Author.findAndCountAll({
+    const authors = await Author.findAll({
       where,
       include: [{
         model: Artwork,
         attributes: ['id', 'title'],
-        required: req.query.has_artworks === 'true'
+        required: false
       }],
       distinct: true
     });

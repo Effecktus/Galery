@@ -28,7 +28,7 @@ const validatePasswordChange = [
     body('newPassword').trim().notEmpty().withMessage('Новый пароль обязателен').isLength({ min: 8 }).withMessage('Пароль должен быть не менее 8 символов')
 ];
 
-const validateAdminCreateUser = [
+const validateCreateUser = [
     body('email').trim().notEmpty().withMessage('Email обязателен').isEmail().withMessage('Неверный формат email'),
     body('password').trim().notEmpty().withMessage('Пароль обязателен').isLength({ min: 8 }).withMessage('Пароль должен быть не менее 8 символов'),
     body('surname').trim().notEmpty().withMessage('Фамилия обязательна').isLength({ min: 2, max: 50 }).withMessage('Фамилия должна быть от 2 до 50 символов'),
@@ -206,7 +206,7 @@ module.exports = {
     validateRegister,
     validateLogin,
     validatePasswordChange,
-    validateAdminCreateUser,
+    validateCreateUser,
     validateStyle,
     validateStyleUpdate,
     validateStyleId,

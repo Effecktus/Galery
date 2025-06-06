@@ -190,6 +190,22 @@ app.get('/admin/authors', (req, res) => {
     });
 });
 
+// Маршрут для страницы управления пользователями
+app.get('/admin/users', (req, res) => {
+    if (!res.locals.user || res.locals.user.role !== 'admin') {
+        return res.status(403).render('error', {
+            title: 'Доступ запрещён',
+            message: 'Требуются права администратора',
+            error: { status: 403 },
+            user: res.locals.user
+        });
+    }
+    res.render('admin/users', {
+        title: 'Управление пользователями',
+        user: res.locals.user
+    });
+});
+
 // Обработка 404 ошибок
 app.use((req, res) => {
     res.status(404).render('error', {

@@ -43,7 +43,7 @@ exports.getAllGenres = async (req, res) => {
       include: [{
         model: Artwork,
         attributes: ['id', 'title'],
-        required: req.query.has_artworks === 'true'
+        required: false
       }],
       distinct: true
     });

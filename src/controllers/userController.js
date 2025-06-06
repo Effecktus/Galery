@@ -1,6 +1,5 @@
 const { User, Ticket, Exhibition } = require('../models');
 const { Op, ValidationError } = require('sequelize');
-const { validatePassword, validateEmail } = require('../middleware/validation');
 
 // Функция для фильтрации чувствительных данных
 const filterSensitiveData = (user) => {
@@ -11,41 +10,8 @@ const filterSensitiveData = (user) => {
 // Создание нового пользователя (админская операция)
 exports.createUser = async (req, res) => {
   try {
-    // Проверка роли админа
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Требуются права администратора'
-      });
-    }
-
-    if (req.body.email) {
-      validateEmail(req.body.email);
-      
-      const existingUser = await User.findOne({
-        where: { email: req.body.email }
-      });
-      
-      if (existingUser) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Пользователь с таким email уже существует'
-        });
-      }
-    }
-
-    if (req.body.password) {
-      validatePassword(req.body.password);
-    }
-
-    if (req.body.role && !['admin', 'manager', 'user'].includes(req.body.role)) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Некорректная роль пользователя. Допустимые значения: admin, manager, user'
-      });
-    }
-
     const newUser = await User.create(req.body);
+
     res.status(201).json({
       status: 'success',
       message: 'Пользователь успешно создан',
@@ -64,13 +30,6 @@ exports.createUser = async (req, res) => {
         }))
       });
     }
-    if (err.message.includes('Пароль') || err.message.includes('email')) {
-      return res.status(400).json({
-        status: 'error',
-        message: err.message
-      });
-    }
-    console.error('Create user error:', err);
     res.status(500).json({
       status: 'error',
       message: 'Не удалось создать пользователя'
@@ -78,59 +37,29 @@ exports.createUser = async (req, res) => {
   }
 };
 
-// Получение всех пользователей с пагинацией
+// Получение всех пользователей
 exports.getAllUsers = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const offset = (page - 1) * limit;
-
     const where = {};
-    
-    if (req.query.role) {
-      if (!['admin', 'manager', 'user'].includes(req.query.role)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректная роль пользователя. Допустимые значения: admin, manager, user'
-        });
-      }
-      where.role = req.query.role;
+
+    if(req.query.name) {
+      where[Op.or] = [
+        {email : { [Op.like]: `%${req.query.email}%` }},
+        { surname: { [Op.like]: `%${req.query.name}%` } },
+        { first_name: { [Op.like]: `%${req.query.name}%` } },
+        { patronymic: { [Op.like]: `%${req.query.name}%` } },
+        { role : { [Op.like]: `%${req.query.name}%` }}
+      ];
     }
 
-    if (req.query.email) {
-      where.email = { [Op.like]: `%${req.query.email}%` };
-    }
-
-    if (req.query.surname) {
-      where.surname = { [Op.like]: `%${req.query.surname}%` };
-    }
-    if (req.query.first_name) {
-      where.first_name = { [Op.like]: `%${req.query.first_name}%` };
-    }
-
-    if (req.query.created_after) {
-      where.created_at = {
-        ...where.created_at,
-        [Op.gte]: new Date(req.query.created_after)
-      };
-    }
-    if (req.query.created_before) {
-      where.created_at = {
-        ...where.created_at,
-        [Op.lte]: new Date(req.query.created_before)
-      };
-    }
-
-    const { count, rows: users } = await User.findAndCountAll({
+    const users = await User.findAll({
       where,
-      limit,
-      offset,
-      order: [['created_at', 'DESC']],
       include: [{
         model: Ticket,
         attributes: ['id'],
         required: false
-      }]
+      }],
+      distint: true
     });
 
     const usersWithStats = users.map(user => {
@@ -146,17 +75,10 @@ exports.getAllUsers = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        users: usersWithStats,
-        pagination: {
-          total: count,
-          page,
-          pages: Math.ceil(count / limit),
-          limit
-        }
+        users: usersWithStats
       }
     });
   } catch (err) {
-    console.error('Get all users error:', err);
     res.status(500).json({
       status: 'error',
       message: 'Ошибка при получении списка пользователей'
@@ -219,9 +141,8 @@ exports.updateUser = async (req, res) => {
       });
     }
 
+    // Проверка email
     if (req.body.email && req.body.email !== user.email) {
-      validateEmail(req.body.email);
-      
       const existingUser = await User.findOne({
         where: {
           email: req.body.email,
@@ -237,12 +158,10 @@ exports.updateUser = async (req, res) => {
       }
     }
 
-    if (req.body.password) {
-      validatePassword(req.body.password);
-    }
-
+    // Обновляем пользователя
     await user.update(req.body);
 
+    // Получение обновлённого пользователя
     const updatedUser = await User.findByPk(req.params.id, {
       include: [{
         model: Ticket,
@@ -252,7 +171,6 @@ exports.updateUser = async (req, res) => {
 
     res.status(200).json({
       status: 'success',
-      message: 'Пользователь успешно обновлен',
       data: {
         user: filterSensitiveData(updatedUser)
       }
@@ -268,13 +186,6 @@ exports.updateUser = async (req, res) => {
         }))
       });
     }
-    if (err.message.includes('Пароль') || err.message.includes('email')) {
-      return res.status(400).json({
-        status: 'error',
-        message: err.message
-      });
-    }
-    console.error('Update user error:', err);
     res.status(500).json({
       status: 'error',
       message: 'Ошибка при обновлении пользователя'
@@ -299,10 +210,13 @@ exports.deleteUser = async (req, res) => {
       });
     }
 
-    if (user.Tickets.length > 0) {
+    if (user.Tickets && user.Tickets.length > 0) {
       return res.status(400).json({
         status: 'error',
-        message: 'Невозможно удалить пользователя с забронированными билетами'
+        message: 'Невозможно удалить пользователя с забронированными билетами',
+        data: {
+          ticketCount: user.Tickets.length
+        }
       });
     }
 
@@ -338,8 +252,8 @@ exports.updateMe = async (req, res) => {
       delete req.body.role;
     }
 
+    // Проверка email
     if (req.body.email && req.body.email !== user.email) {
-      validateEmail(req.body.email);
       
       const existingUser = await User.findOne({
         where: {
@@ -354,10 +268,6 @@ exports.updateMe = async (req, res) => {
           message: 'Пользователь с таким email уже существует'
         });
       }
-    }
-
-    if (req.body.password) {
-      validatePassword(req.body.password);
     }
 
     await user.update(req.body);
@@ -387,13 +297,6 @@ exports.updateMe = async (req, res) => {
         }))
       });
     }
-    if (err.message.includes('Пароль') || err.message.includes('email')) {
-      return res.status(400).json({
-        status: 'error',
-        message: err.message
-      });
-    }
-    console.error('Update me error:', err);
     res.status(500).json({
       status: 'error',
       message: 'Ошибка при обновлении профиля'

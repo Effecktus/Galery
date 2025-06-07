@@ -9,7 +9,6 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 const express = require('express');
-const session = require('express-session');
 const cors = require('cors');
 const expressLayouts = require('express-ejs-layouts');
 const db = require('./models');
@@ -27,17 +26,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
-
-// Session configuration
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-}));
 
 // Подключение к базе данных
 db.sequelize.authenticate()
@@ -109,13 +97,6 @@ app.get('/auth/register', (req, res) => {
 app.post('/auth/register', authController.register);
 
 app.get('/auth/logout', (req, res) => {
-    // Очищаем сессию
-    req.session.destroy((err) => {
-        if (err) {
-            console.error('Error destroying session:', err);
-        }
-    });
-
     // Очищаем все куки
     res.clearCookie('token');
     res.clearCookie('connect.sid');
@@ -202,6 +183,22 @@ app.get('/admin/users', (req, res) => {
     }
     res.render('admin/users', {
         title: 'Управление пользователями',
+        user: res.locals.user
+    });
+});
+
+// Маршрут для страницы управления произведениями искусства
+app.get('/admin/artworks', (req, res) => {
+    if (!res.locals.user || res.locals.user.role !== 'admin') {
+        return res.status(403).render('error', {
+            title: 'Доступ запрещён',
+            message: 'Требуются права администратора',
+            error: { status: 403 },
+            user: res.locals.user
+        });
+    }
+    res.render('admin/artworks', {
+        title: 'Управление произведениями искусства',
         user: res.locals.user
     });
 });

@@ -112,7 +112,6 @@ const validateArtwork = [
     body('style_id').isInt().withMessage('ID стиля должен быть числом'),
     body('genre_id').isInt().withMessage('ID жанра должен быть числом'),
     body('description').optional().trim().isLength({ max: 2000 }).withMessage('Описание не должно превышать 2000 символов'),
-    body('image_path').trim().notEmpty().withMessage('Путь к изображению обязателен'),
     body('exhibition_id').optional().isInt().withMessage('ID выставки должен быть числом')
 ];
 

@@ -1,9 +1,32 @@
 const { Artwork, Author, Style, Genre, Exhibition } = require('../models');
 const { Op, ValidationError } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
+
+// Функция для удаления файла изображения
+const deleteImageFile = (imagePath) => {
+  if (!imagePath) return;
+  
+  // Получаем полный путь к файлу
+  const fullPath = path.join(__dirname, '../public', imagePath);
+  
+  // Проверяем существование файла и удаляем его
+  if (fs.existsSync(fullPath)) {
+    fs.unlinkSync(fullPath);
+  }
+};
 
 // Создание нового произведения искусства
 exports.createArtwork = async (req, res) => {
   try {
+    // Проверяем наличие файла
+    if (!req.file) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Изображение обязательно'
+      });
+    }
+
     // Проверяем существование связанных сущностей
     const [author, style, genre] = await Promise.all([
       Author.findByPk(req.body.author_id),
@@ -30,38 +53,10 @@ exports.createArtwork = async (req, res) => {
       });
     }
 
-    // Если указана выставка, проверяем её существование
-    if (req.body.exhibition_id) {
-      const exhibition = await Exhibition.findByPk(req.body.exhibition_id);
-      if (!exhibition) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Указанная выставка не существует'
-        });
-      }
-    }
+    // Добавляем путь к изображению в данные произведения
+    req.body.image_path = `/upload/${req.file.filename}`;
 
-    const newArtwork = await Artwork.create(req.body);
-    const artwork = await Artwork.findByPk(newArtwork.id, {
-      include: [
-        { 
-          model: Author,
-          attributes: ['id', 'surname', 'first_name', 'patronymic']
-        },
-        { 
-          model: Style,
-          attributes: ['id', 'name']
-        },
-        { 
-          model: Genre,
-          attributes: ['id', 'name']
-        },
-        { 
-          model: Exhibition,
-          attributes: ['id', 'title', 'start_date', 'end_date']
-        }
-      ]
-    });
+    const artwork = await Artwork.create(req.body);
 
     res.status(201).json({
       status: 'success',
@@ -80,117 +75,88 @@ exports.createArtwork = async (req, res) => {
         }))
       });
     }
-    res.status(400).json({
+    res.status(500).json({
       status: 'error',
       message: 'Не удалось создать произведение: ' + err.message
     });
   }
 };
 
-// Получение всех произведений искусства с фильтрацией и пагинацией
+// Получение всех произведений искусства
 exports.getAllArtworks = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const offset = (page - 1) * limit;
-
     // Базовые условия фильтрации
     const where = {};
     
-    // Фильтрация по ID
-    if (req.query.author_id) {
-      const authorId = parseInt(req.query.author_id, 10);
-      if (isNaN(authorId)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректный ID автора'
-        });
-      }
-      where.author_id = authorId;
-    }
-    if (req.query.style_id) {
-      const styleId = parseInt(req.query.style_id, 10);
-      if (isNaN(styleId)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректный ID стиля'
-        });
-      }
-      where.style_id = styleId;
-    }
-    if (req.query.genre_id) {
-      const genreId = parseInt(req.query.genre_id, 10);
-      if (isNaN(genreId)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректный ID жанра'
-        });
-      }
-      where.genre_id = genreId;
-    }
-    if (req.query.exhibition_id) {
-      const exhibitionId = parseInt(req.query.exhibition_id, 10);
-      if (isNaN(exhibitionId)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректный ID выставки'
-        });
-      }
-      where.exhibition_id = exhibitionId;
-    }
-
-    // Фильтрация по названию
-    if (req.query.title) {
-      where.title = { [Op.like]: `%${req.query.title}%` };
+    // Фильтрация по названию произведения
+    if (req.query.search) {
+      where.title = { [Op.like]: `%${req.query.search}%` };
     }
 
     // Фильтрация по году создания
-    if (req.query.creation_year) {
-      const year = parseInt(req.query.creation_year, 10);
-      if (isNaN(year)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректный год создания'
-        });
+    if (req.query.search) {
+      const year = parseInt(req.query.search, 10);
+      if (!isNaN(year)) {
+        where.creation_year = year;
       }
-      where.creation_year = year;
     }
 
-    const { count, rows: artworks } = await Artwork.findAndCountAll({
+    // Настройка включения связанных моделей с условиями фильтрации
+    const include = [
+      { 
+        model: Author,
+        attributes: ['id', 'surname', 'first_name', 'patronymic'],
+        where: req.query.search ? {
+          [Op.or]: [
+            { surname: { [Op.like]: `%${req.query.search}%` } },
+            { first_name: { [Op.like]: `%${req.query.search}%` } },
+            { patronymic: { [Op.like]: `%${req.query.search}%` } }
+          ]
+        } : undefined,
+        required: false
+      },
+      { 
+        model: Style,
+        attributes: ['id', 'name'],
+        where: req.query.search ? {
+          name: { [Op.like]: `%${req.query.search}%` }
+        } : undefined,
+        required: false
+      },
+      { 
+        model: Genre,
+        attributes: ['id', 'name'],
+        where: req.query.search ? {
+          name: { [Op.like]: `%${req.query.search}%` }
+        } : undefined,
+        required: false
+      },
+      { 
+        model: Exhibition,
+        attributes: ['id'],
+        through: { attributes: [] }, // Исключаем атрибуты промежуточной таблицы
+        required: false
+      }
+    ];
+
+    const artworks = await Artwork.findAll({
       where,
-      limit,
-      offset,
-      order: [['created_at', 'DESC']],
-      include: [
-        { 
-          model: Author,
-          attributes: ['id', 'surname', 'first_name', 'patronymic']
-        },
-        { 
-          model: Style,
-          attributes: ['id', 'name']
-        },
-        { 
-          model: Genre,
-          attributes: ['id', 'name']
-        },
-        { 
-          model: Exhibition,
-          attributes: ['id', 'title', 'start_date', 'end_date']
-        }
-      ]
+      include,
+      distinct: true
     });
+
+    // Добавляем статистику по выставкам
+    const artworksWithStats = artworks.map(artwork => ({
+      ...artwork.toJSON(),
+      statistics: {
+        total_exhibitions: artwork.Exhibitions ? artwork.Exhibitions.length : 0
+      }
+    }));
 
     res.status(200).json({
       status: 'success',
       data: {
-        artworks,
-        pagination: {
-          total: count,
-          page,
-          pages: Math.ceil(count / limit),
-          limit
-        }
+        artworks: artworksWithStats
       }
     });
   } catch(err) {
@@ -251,6 +217,7 @@ exports.updateArtwork = async (req, res) => {
   try {
     // Проверяем существование произведения
     const artwork = await Artwork.findByPk(req.params.id);
+    
     if (!artwork) {
       return res.status(404).json({
         status: 'error',
@@ -286,14 +253,11 @@ exports.updateArtwork = async (req, res) => {
         });
       }
     }
-    if (req.body.exhibition_id) {
-      const exhibition = await Exhibition.findByPk(req.body.exhibition_id);
-      if (!exhibition) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Указанная выставка не существует'
-        });
-      }
+
+    // Если загружено новое изображение, удаляем старое
+    if (req.file) {
+      deleteImageFile(artwork.image_path);
+      req.body.image_path = `/upload/${req.file.filename}`;
     }
 
     // Обновляем произведение
@@ -348,7 +312,13 @@ exports.updateArtwork = async (req, res) => {
 // Удаление произведения искусства по ID
 exports.deleteArtwork = async (req, res) => {
   try {
-    const artwork = await Artwork.findByPk(req.params.id);
+    const artwork = await Artwork.findByPk(req.params.id, {
+      include: [{
+        model: Exhibition,
+        attributes: ['id', 'title'],
+        through: { attributes: [] }
+      }]
+    });
     
     if (!artwork) {
       return res.status(404).json({
@@ -357,7 +327,28 @@ exports.deleteArtwork = async (req, res) => {
       });
     }
 
+    // Проверяем, участвует ли произведение в каких-либо выставках
+    if (artwork.Exhibitions && artwork.Exhibitions.length > 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Невозможно удалить произведение, так как оно участвует в выставках',
+        data: {
+          exhibitions: artwork.Exhibitions.map(exhibition => ({
+            id: exhibition.id,
+            title: exhibition.title
+          }))
+        }
+      });
+    }
+
+    // Сохраняем путь к изображению перед удалением произведения
+    const imagePath = artwork.image_path;
+
+    // Удаляем произведение
     await artwork.destroy();
+
+    // Удаляем файл изображения
+    deleteImageFile(imagePath);
 
     res.status(200).json({
       status: 'success',

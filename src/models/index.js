@@ -61,11 +61,6 @@ Exhibition.hasMany(Ticket, { foreignKey: 'exhibition_id' });
 Ticket.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(Ticket, { foreignKey: 'user_id' });
 
-// Синхронизация с базой данных
-sequelize.sync({ alter: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' })
-    .then(() => console.log('Database synchronized'))
-    .catch(err => console.error('Error synchronizing database:', err));
-
 module.exports = {
     sequelize,
     Sequelize,

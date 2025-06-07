@@ -3,6 +3,7 @@ const router = express.Router();
 const artworkController = require('../controllers/artworkController');
 const auth = require('../middleware/auth');
 const { validateArtwork, validateArtworkId, validateArtworkUpdate, validate } = require('../middleware/validation');
+const upload = require('../middleware/upload');
 
 const logRequest = (req, res, next) => {
   const timestamp = new Date().toISOString();
@@ -10,16 +11,15 @@ const logRequest = (req, res, next) => {
   next();
 };
 
-router.use(logRequest);
-
 router.get('/', artworkController.getAllArtworks);
 router.get('/:id', validateArtworkId, validate, artworkController.getArtwork);
 
 router.use(auth.protect);
-router.use(auth.restrictTo('admin', 'manager'));
+router.use(auth.restrictTo('admin'));
+router.use(logRequest);
 
-router.post('/', validateArtwork, validate, artworkController.createArtwork);
-router.patch('/:id', validateArtworkId, validateArtworkUpdate, validate, artworkController.updateArtwork);
+router.post('/', upload.single('image_path'), validateArtwork, validate, artworkController.createArtwork);
+router.patch('/:id', upload.single('image_path'), validateArtworkId, validateArtworkUpdate, validate, artworkController.updateArtwork);
 router.delete('/:id', validateArtworkId, validate, artworkController.deleteArtwork);
 
 module.exports = router;

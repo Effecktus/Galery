@@ -1,0 +1,237 @@
+<div class="admin-container">
+  <div class="admin-header">
+    <h1>Управление произведениями искусства</h1>
+    <button type="button" class="btn btn-primary" data-modal="addArtworkModal">
+      <i class="fas fa-plus"></i>Добавить произведение
+    </button>
+  </div>
+
+  <!-- Поисковая строка -->
+  <div class="search-section">
+    <div class="search-container">
+      <input
+        type="text"
+        id="searchInput"
+        class="search-input"
+        placeholder="Поиск произведений..."
+        aria-label="Поиск произведений"
+      />
+    </div>
+  </div>
+
+  <!-- Таблица произведений -->
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="sortable" data-column="id">ID</th>
+          <th>Изображение</th>
+          <th class="sortable" data-column="title">Название</th>
+          <th class="sortable" data-column="author">Автор</th>
+          <th class="sortable" data-column="style">Стиль</th>
+          <th class="sortable" data-column="genre">Жанр</th>
+          <th class="sortable" data-column="creation_year">Год создания</th>
+          <th class="sortable" data-column="dimensions">Размеры</th>
+          <th class="sortable" data-column="exhibitions">Выставки</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="artworksTableBody">
+        <!-- Данные будут загружены через JavaScript -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Модальное окно для просмотра изображения -->
+<div class="modal" id="imagePreviewModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Просмотр изображения</h5>
+      <button type="button" class="modal-close" aria-label="Close">
+        &times;
+      </button>
+    </div>
+    <div class="modal-body">
+      <img
+        id="previewImage"
+        src=""
+        alt="Предпросмотр изображения"
+        style="max-width: 100%; height: auto"
+      />
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно добавления произведения -->
+<div class="modal" id="addArtworkModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Добавить произведение</h5>
+      <button type="button" class="modal-close" aria-label="Close">
+        &times;
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="addArtworkForm">
+        <div class="form-group">
+          <label for="artworkTitle">Название</label>
+          <input type="text" id="artworkTitle" required />
+        </div>
+        <div class="form-group">
+          <label for="artworkAuthor">Автор</label>
+          <select id="artworkAuthor" required>
+            <!-- Опции будут загружены через JavaScript -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="artworkStyle">Стиль</label>
+          <select id="artworkStyle" required>
+            <!-- Опции будут загружены через JavaScript -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="artworkGenre">Жанр</label>
+          <select id="artworkGenre" required>
+            <!-- Опции будут загружены через JavaScript -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="artworkCreationYear">Год создания</label>
+          <input
+            type="number"
+            id="artworkCreationYear"
+            min="0"
+            max="<%= new Date().getFullYear() %>"
+          />
+        </div>
+        <div class="form-group">
+          <label for="artworkWidth">Ширина (см)</label>
+          <input type="number" id="artworkWidth" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label for="artworkHeight">Высота (см)</label>
+          <input type="number" id="artworkHeight" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label for="artworkDescription">Описание</label>
+          <textarea id="artworkDescription" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="artworkImage">Изображение</label>
+          <input type="file" id="artworkImage" accept="image/*" required />
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-close">
+        Отмена
+      </button>
+      <button type="button" class="btn btn-primary" id="saveArtworkBtn">
+        Сохранить
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно редактирования произведения -->
+<div class="modal" id="editArtworkModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Редактировать произведение</h5>
+      <button type="button" class="modal-close" aria-label="Close">
+        &times;
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="editArtworkForm">
+        <input type="hidden" id="editArtworkId" />
+        <div class="form-group">
+          <label for="editArtworkTitle">Название</label>
+          <input type="text" id="editArtworkTitle" required />
+        </div>
+        <div class="form-group">
+          <label for="editArtworkAuthor">Автор</label>
+          <select id="editArtworkAuthor" required>
+            <!-- Опции будут загружены через JavaScript -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editArtworkStyle">Стиль</label>
+          <select id="editArtworkStyle" required>
+            <!-- Опции будут загружены через JavaScript -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editArtworkGenre">Жанр</label>
+          <select id="editArtworkGenre" required>
+            <!-- Опции будут загружены через JavaScript -->
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editArtworkCreationYear">Год создания</label>
+          <input
+            type="number"
+            id="editArtworkCreationYear"
+            min="0"
+            max="<%= new Date().getFullYear() %>"
+          />
+        </div>
+        <div class="form-group">
+          <label for="editArtworkWidth">Ширина (см)</label>
+          <input type="number" id="editArtworkWidth" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label for="editArtworkHeight">Высота (см)</label>
+          <input type="number" id="editArtworkHeight" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label for="editArtworkDescription">Описание</label>
+          <textarea id="editArtworkDescription" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="editArtworkImage">Изображение</label>
+          <input type="file" id="editArtworkImage" accept="image/*" />
+          <div id="currentImagePreview" class="image-preview"></div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-close">
+        Отмена
+      </button>
+      <button type="button" class="btn btn-primary" id="updateArtworkBtn">
+        Сохранить
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal" id="deleteArtworkModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Подтверждение удаления</h5>
+      <button type="button" class="modal-close" aria-label="Close">
+        &times;
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Вы уверены, что хотите удалить это произведение?</p>
+      <p class="warning-text">
+        Внимание: Если произведение участвует в выставках, удаление будет
+        невозможно.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-close">
+        Отмена
+      </button>
+      <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+        Удалить
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/artworks.js"></script>

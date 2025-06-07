@@ -70,14 +70,6 @@ module.exports = (sequelize) => {
         image_path: {
             type: DataTypes.STRING(255),
             allowNull: false
-        },
-        exhibition_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: {
-                model: 'Exhibition',
-                key: 'id'
-            }
         }
     }, {
         timestamps: true,

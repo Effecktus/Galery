@@ -203,6 +203,22 @@ app.get('/admin/artworks', (req, res) => {
     });
 });
 
+// Маршрут для страницы управления выставками
+app.get('/manager/exhibitions', (req, res) => {
+    if (!res.locals.user || (res.locals.user.role !== 'admin' && res.locals.user.role !== 'manager')) {
+        return res.status(403).render('error', {
+            title: 'Доступ запрещён',
+            message: 'Требуются права администратора/менеджера',
+            error: { status: 403 },
+            user: res.locals.user
+        });
+    }
+    res.render('manager/exhibitions', {
+        title: 'Управление выставками',
+        user: res.locals.user
+    });
+});
+
 // Обработка 404 ошибок
 app.use((req, res) => {
     res.status(404).render('error', {

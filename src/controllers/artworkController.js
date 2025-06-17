@@ -54,7 +54,7 @@ exports.createArtwork = async (req, res) => {
     }
 
     // Добавляем путь к изображению в данные произведения
-    req.body.image_path = `/upload/${req.file.filename}`;
+    req.body.image_path = `/media/${req.file.filename}`;
 
     const artwork = await Artwork.create(req.body);
 
@@ -257,7 +257,7 @@ exports.updateArtwork = async (req, res) => {
     // Если загружено новое изображение, удаляем старое
     if (req.file) {
       deleteImageFile(artwork.image_path);
-      req.body.image_path = `/upload/${req.file.filename}`;
+      req.body.image_path = `/media/${req.file.filename}`;
     }
 
     // Обновляем произведение

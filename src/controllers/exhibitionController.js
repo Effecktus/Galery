@@ -141,10 +141,22 @@ exports.getAllExhibitions = async (req, res) => {
       limit,
       offset,
       order: [['start_date', 'ASC']],
-      include: [{ 
-        model: Artwork,
-        attributes: ['id', 'title', 'creation_year', 'image_path']
-      }]
+      include: [
+        { 
+          model: Artwork,
+          attributes: ['id', 'title', 'creation_year', 'image_path'],
+          include: [
+            {
+              model: Author,
+              attributes: ['id', 'surname', 'first_name', 'patronymic']
+            }
+          ]
+        },
+        {
+          model: Ticket,
+          attributes: ['id', 'quantity']
+        }
+      ]
     });
 
     res.status(200).json({

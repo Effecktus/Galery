@@ -18,14 +18,16 @@ module.exports = (sequelize) => {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: true,
             validate: {
-                min: 0
+                min: 0,
+                notEmpty: true
             }
         },
         height: {
             type: DataTypes.DECIMAL(10, 2),
             allowNull: true,
             validate: {
-                min: 0
+                min: 0,
+                notEmpty: true
             }
         },
         author_id: {
@@ -44,7 +46,8 @@ module.exports = (sequelize) => {
                     if (value && value > new Date().getFullYear()) {
                         throw new Error('Год создания не может быть в будущем');
                     }
-                }
+                },
+                notEmpty: true
             }
         },
         style_id: {

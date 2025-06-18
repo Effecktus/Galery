@@ -105,9 +105,9 @@ const validateAuthorId = [
 
 const validateArtwork = [
     body('title').trim().notEmpty().withMessage('Название произведения обязательно').isLength({ min: 2, max: 100 }).withMessage('Название должно быть от 2 до 100 символов'),
-    body('width').isFloat({ min: 0 }).withMessage('Ширина должна быть положительным числом'),
-    body('height').isFloat({ min: 0 }).withMessage('Высота должна быть положительным числом'),
-    body('creation_year').optional().isInt({ max: new Date().getFullYear() }).withMessage('Неверный год создания'),
+    body('width').notEmpty().withMessage('Ширина произведения обязательна').isFloat({ min: 0 }).withMessage('Ширина должна быть положительным числом'),
+    body('height').notEmpty().withMessage('Высота произведения обязательна').isFloat({ min: 0 }).withMessage('Высота должна быть положительным числом'),
+    body('creation_year').notEmpty().withMessage('Год создания произведения обязателен').isInt({ max: new Date().getFullYear() }).withMessage('Неверный год создания'),
     body('author_id').isInt().withMessage('ID автора должен быть числом'),
     body('style_id').isInt().withMessage('ID стиля должен быть числом'),
     body('genre_id').isInt().withMessage('ID жанра должен быть числом'),

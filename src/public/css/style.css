@@ -728,4 +728,57 @@ main {
 
 #imagePreviewModal .modal-close:hover {
     opacity: 1;
+}
+
+/* Стили для заголовков в модальном окне с деталями */
+.detail-group h3 {
+    color: #007bff;
+    font-size: 1.25rem;
+    margin: 1.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #007bff;
+}
+
+.detail-group:first-child h3 {
+    margin-top: 0;
+}
+
+.detail-group p {
+    margin: 0.5rem 0;
+    line-height: 1.5;
+}
+
+.detail-group strong {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Стили для валидации форм */
+.form-group.error input {
+    border-color: #dc3545;
+}
+
+.form-group.error .error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.form-group.error input:focus {
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+}
+
+/* Стили для модального окна с ошибками */
+.modal-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    display: none;
+}
+
+.modal-error.active {
+    display: block;
 } 

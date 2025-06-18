@@ -8,20 +8,29 @@ $(document).ready(function () {
   // Загрузка стилей при загрузке страницы
   loadStyles();
 
+  // Обработчик открытия модального окна добавления
+  $('[data-modal="addStyleModal"]').on('click', function() {
+    $('#addStyleModal').addClass('active');
+    setTimeout(() => {
+      clearErrors('addStyleForm');
+    }, 0);
+  });
+
+  // Обработчик закрытия модальных окон
+  $('.modal-close').on('click', function() {
+    $(this).closest('.modal').removeClass('active');
+  });
+
   // Переменная для хранения таймера
   let searchTimer;
 
   // Обработчик поиска при вводе
   $('#searchInput').on('input', function () {
     const searchTerm = $(this).val();
-    
-    // Очищаем предыдущий таймер
     clearTimeout(searchTimer);
-    
-    // Устанавливаем новый таймер
     searchTimer = setTimeout(() => {
       loadStyles(searchTerm);
-    }, 300); // Задержка 300мс
+    }, 300);
   });
 
   // Обработчик клика по заголовкам таблицы
@@ -43,17 +52,17 @@ $(document).ready(function () {
 
   // Обработчик добавления стиля
   $('#saveStyleBtn').on('click', function () {
-    const name = $('#styleName').val();
-    if (name) {
+    if (validateStyleForm('addStyleForm', 'styleName')) {
+      const name = $('#styleName').val();
       addStyle(name);
     }
   });
 
   // Обработчик обновления стиля
   $('#updateStyleBtn').on('click', function () {
-    const id = $('#editStyleId').val();
-    const name = $('#editStyleName').val();
-    if (id && name) {
+    if (validateStyleForm('editStyleForm', 'editStyleName')) {
+      const id = $('#editStyleId').val();
+      const name = $('#editStyleName').val();
       updateStyle(id, name);
     }
   });
@@ -115,16 +124,28 @@ function loadStyles(searchTerm="") {
               <td>${style.name}</td>
               <td>${style.statistics?.total_artworks}</td>
               <td>
-                <button class="btn btn-sm btn-primary me-2" onclick="editStyle(${style.id}, '${style.name}')">
-                  <i class="fas fa-edit"></i>Изменить
+                <button class="btn btn-sm btn-primary me-2 edit-style-btn" data-id="${style.id}" data-name="${style.name}">
+                  <i class="fas fa-edit"></i> Изменить
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${style.id})">
-                  <i class="fas fa-trash"></i>Удалить
+                <button class="btn btn-sm btn-danger delete-style-btn" data-id="${style.id}">
+                  <i class="fas fa-trash"></i> Удалить
                 </button>
               </td>
             </tr>
           `;
           tbody.append(row);
+        });
+
+        // Добавляем обработчики для кнопок после добавления строк в таблицу
+        $('.edit-style-btn').on('click', function() {
+          const id = $(this).data('id');
+          const name = $(this).data('name');
+          editStyle(id, name);
+        });
+
+        $('.delete-style-btn').on('click', function() {
+          const id = $(this).data('id');
+          confirmDelete(id);
         });
       }
     },
@@ -138,6 +159,53 @@ function loadStyles(searchTerm="") {
   });
 }
 
+// Функция для очистки ошибок
+function clearErrors(formId) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+
+  const errorContainer = document.getElementById(formId + 'Error');
+  const errorMessages = form.querySelectorAll('.error-message');
+  const formGroups = form.querySelectorAll('.form-group');
+
+  if (errorContainer) errorContainer.classList.remove('active');
+  if (errorContainer) errorContainer.textContent = '';
+  errorMessages.forEach(msg => msg.textContent = '');
+  formGroups.forEach(group => group.classList.remove('error'));
+}
+
+// Функция для отображения ошибок
+function showError(formId, fieldName, message) {
+  const form = document.getElementById(formId);
+  const field = form.querySelector(`#${fieldName}`);
+  const formGroup = field.closest('.form-group');
+  const errorMessage = formGroup.querySelector('.error-message');
+  const errorContainer = document.getElementById(formId + 'Error');
+
+  formGroup.classList.add('error');
+  errorMessage.textContent = message;
+  errorContainer.textContent = 'Пожалуйста, исправьте ошибки в форме';
+  errorContainer.classList.add('active');
+}
+
+// Функция валидации формы
+function validateStyleForm(formId, nameFieldId) {
+  const name = document.getElementById(nameFieldId).value.trim();
+  let isValid = true;
+
+  clearErrors(formId);
+
+  if (!name) {
+    showError(formId, nameFieldId, 'Название стиля обязательно');
+    isValid = false;
+  } else if (name.length < 2 || name.length > 50) {
+    showError(formId, nameFieldId, 'Название должно быть от 2 до 50 символов');
+    isValid = false;
+  }
+
+  return isValid;
+}
+
 // Функция добавления стиля
 function addStyle(name) {
   $.ajax({
@@ -147,21 +215,28 @@ function addStyle(name) {
     data: JSON.stringify({ name }),
     success: function(response) {
       if (response.status === "success") {
-        // Закрываем модальное окно и очищаем форму
         $('#addStyleModal').removeClass('active');
         $('#styleName').val('');
-
-        // Перезагружаем список стилей
+        clearErrors('addStyleForm');
         loadStyles();
       } else {
-        alert(response.message || "Ошибка при добавлении стиля");
+        showError('addStyleForm', 'styleName', response.message || "Ошибка при добавлении стиля");
       }
     },
     error: function(xhr) {
       if (xhr.status === 401) {
         window.location.href = '/auth/login';
+      } else if (xhr.status === 400) {
+        const response = xhr.responseJSON;
+        if (response.errors && response.errors.length > 0) {
+          response.errors.forEach(error => {
+            showError('addStyleForm', 'styleName', error.message);
+          });
+        } else {
+          showError('addStyleForm', 'styleName', response.message || "Ошибка при добавлении стиля");
+        }
       } else {
-        alert("Ошибка при добавлении стиля");
+        showError('addStyleForm', 'styleName', "Ошибка при добавлении стиля");
       }
     }
   });
@@ -169,6 +244,7 @@ function addStyle(name) {
 
 // Функция редактирования стиля
 window.editStyle = function(id, name) {
+  clearErrors('editStyleForm');
   $('#editStyleId').val(id);
   $('#editStyleName').val(name);
   $('#editStyleModal').addClass('active');
@@ -183,20 +259,27 @@ function updateStyle(id, name) {
     data: JSON.stringify({ name }),
     success: function(response) {
       if (response.status === "success") {
-        // Закрываем модальное окно
         $('#editStyleModal').removeClass('active');
-
-        // Перезагружаем список стилей
+        clearErrors('editStyleForm');
         loadStyles();
       } else {
-        alert(response.message || "Ошибка при обновлении стиля");
+        showError('editStyleForm', 'editStyleName', response.message || "Ошибка при обновлении стиля");
       }
     },
     error: function(xhr) {
       if (xhr.status === 401) {
         window.location.href = '/auth/login';
+      } else if (xhr.status === 400) {
+        const response = xhr.responseJSON;
+        if (response.errors && response.errors.length > 0) {
+          response.errors.forEach(error => {
+            showError('editStyleForm', 'editStyleName', error.message);
+          });
+        } else {
+          showError('editStyleForm', 'editStyleName', response.message || "Ошибка при обновлении стиля");
+        }
       } else {
-        alert("Ошибка при обновлении стиля");
+        showError('editStyleForm', 'editStyleName', "Ошибка при обновлении стиля");
       }
     }
   });
@@ -224,9 +307,7 @@ function deleteStyle(id) {
       } else if (xhr.status === 400) {
         const response = xhr.responseJSON;
         if (response.errors && response.errors.length > 0) {
-          // Обработка ошибок валидации
-          const errorMessage = response.errors.map(err => err.msg).join('\n');
-          alert(errorMessage);
+          alert(response.errors.map(err => err.msg).join('\n'));
         } else if (response.data && response.data.artworksCount) {
           alert(`Невозможно удалить стиль: он используется в ${response.data.artworksCount} произведениях`);
         } else {

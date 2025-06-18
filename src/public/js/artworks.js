@@ -45,9 +45,13 @@ $(document).ready(function () {
 
   // Обработчик добавления произведения
   $('#saveArtworkBtn').on('click', function () {
+    const errors = validateAddArtworkForm();
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
+    }
+
     const formData = new FormData();
-    
-    // Добавляем все поля формы с правильным форматированием
     formData.append('title', $('#artworkTitle').val().trim());
     formData.append('author_id', parseInt($('#artworkAuthor').val()));
     formData.append('style_id', parseInt($('#artworkStyle').val()));
@@ -57,23 +61,9 @@ $(document).ready(function () {
     formData.append('height', parseFloat($('#artworkHeight').val()));
     formData.append('description', $('#artworkDescription').val().trim());
     
-    // Добавляем изображение с правильным именем поля
     const imageFile = $('#artworkImage')[0].files[0];
     if (imageFile) {
-        formData.append('image_path', imageFile);
-    } else {
-        alert('Пожалуйста, выберите изображение');
-        return;
-    }
-
-    // Логируем данные формы
-    console.log('Form data:');
-    for (let pair of formData.entries()) {
-        if (pair[0] === 'image_path') {
-            console.log(pair[0] + ': [File] ' + pair[1].name);
-        } else {
-            console.log(pair[0] + ': ' + pair[1]);
-        }
+      formData.append('image_path', imageFile);
     }
 
     addArtwork(formData);
@@ -81,20 +71,24 @@ $(document).ready(function () {
 
   // Обработчик обновления произведения
   $('#updateArtworkBtn').on('click', function () {
+    const errors = validateEditArtworkForm();
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
+    }
+
     const formData = new FormData();
     const id = $('#editArtworkId').val();
     
-    // Добавляем все поля формы
-    formData.append('title', $('#editArtworkTitle').val());
-    formData.append('author_id', $('#editArtworkAuthor').val());
-    formData.append('style_id', $('#editArtworkStyle').val());
-    formData.append('genre_id', $('#editArtworkGenre').val());
-    formData.append('creation_year', $('#editArtworkCreationYear').val());
-    formData.append('width', $('#editArtworkWidth').val());
-    formData.append('height', $('#editArtworkHeight').val());
-    formData.append('description', $('#editArtworkDescription').val());
+    formData.append('title', $('#editArtworkTitle').val().trim());
+    formData.append('author_id', parseInt($('#editArtworkAuthor').val()));
+    formData.append('style_id', parseInt($('#editArtworkStyle').val()));
+    formData.append('genre_id', parseInt($('#editArtworkGenre').val()));
+    formData.append('creation_year', parseInt($('#editArtworkCreationYear').val()));
+    formData.append('width', parseFloat($('#editArtworkWidth').val()));
+    formData.append('height', parseFloat($('#editArtworkHeight').val()));
+    formData.append('description', $('#editArtworkDescription').val().trim());
     
-    // Добавляем изображение только если оно было изменено
     const imageFile = $('#editArtworkImage')[0].files[0];
     if (imageFile) {
       formData.append('image_path', imageFile);
@@ -202,7 +196,7 @@ function loadArtworks(searchTerm = "") {
         artworks.forEach(function(artwork) {
           // Преобразуем путь к изображению
           const imagePath = artwork.image_path.split('/').pop(); // Получаем только имя файла
-          const imageUrl = `/upload/${imagePath}`; // Путь относительно public
+          const imageUrl = `/media/${imagePath}`; // Путь относительно public
           
           const row = `
             <tr>
@@ -304,6 +298,158 @@ function loadGenres() {
   });
 }
 
+// Функция для очистки ошибок
+function clearErrors() {
+  $('.error-message').text('');
+  $('.form-group').removeClass('error');
+  $('.form-group input, .form-group select, .form-group textarea').removeClass('error');
+}
+
+// Функция для отображения ошибок
+function showErrors(errors) {
+  clearErrors();
+  if (errors && errors.length > 0) {
+    errors.forEach(error => {
+      const field = error.field;
+      const message = error.message;
+      const formGroup = $(`#${field}`).closest('.form-group');
+      formGroup.addClass('error');
+      $(`#${field}`).addClass('error');
+      $(`#${field}Error`).text(message);
+    });
+  }
+}
+
+// Функция валидации формы добавления произведения
+function validateAddArtworkForm() {
+  const title = $('#artworkTitle').val().trim();
+  const author_id = $('#artworkAuthor').val();
+  const style_id = $('#artworkStyle').val();
+  const genre_id = $('#artworkGenre').val();
+  const creation_year = $('#artworkCreationYear').val();
+  const width = $('#artworkWidth').val();
+  const height = $('#artworkHeight').val();
+  const description = $('#artworkDescription').val().trim();
+  const image = $('#artworkImage')[0].files[0];
+
+  const errors = [];
+
+  if (!title) {
+    errors.push({ field: 'artworkTitle', message: 'Название произведения обязательно' });
+  } else if (title.length < 2 || title.length > 100) {
+    errors.push({ field: 'artworkTitle', message: 'Название должно быть от 2 до 100 символов' });
+  }
+
+  if (!author_id) {
+    errors.push({ field: 'artworkAuthor', message: 'Выберите автора' });
+  }
+
+  if (!style_id) {
+    errors.push({ field: 'artworkStyle', message: 'Выберите стиль' });
+  }
+
+  if (!genre_id) {
+    errors.push({ field: 'artworkGenre', message: 'Выберите жанр' });
+  }
+
+  if (!creation_year) {
+    errors.push({ field: 'artworkCreationYear', message: 'Год создания произведения обязателен' });
+  } else {
+    const year = parseInt(creation_year);
+    if (isNaN(year) || year > new Date().getFullYear()) {
+      errors.push({ field: 'artworkCreationYear', message: 'Неверный год создания' });
+    }
+  }
+
+  if (!width) {
+    errors.push({ field: 'artworkWidth', message: 'Ширина произведения обязательна' });
+  } else {
+    const widthValue = parseFloat(width);
+    if (isNaN(widthValue) || widthValue <= 0) {
+      errors.push({ field: 'artworkWidth', message: 'Ширина должна быть положительным числом' });
+    }
+  }
+
+  if (!height) {
+    errors.push({ field: 'artworkHeight', message: 'Высота произведения обязательна' });
+  } else {
+    const heightValue = parseFloat(height);
+    if (isNaN(heightValue) || heightValue <= 0) {
+      errors.push({ field: 'artworkHeight', message: 'Высота должна быть положительным числом' });
+    }
+  }
+
+  if (description && description.length > 2000) {
+    errors.push({ field: 'artworkDescription', message: 'Описание не должно превышать 2000 символов' });
+  }
+
+  if (!image) {
+    errors.push({ field: 'artworkImage', message: 'Выберите изображение' });
+  }
+
+  return errors;
+}
+
+// Функция валидации формы редактирования произведения
+function validateEditArtworkForm() {
+  const title = $('#editArtworkTitle').val().trim();
+  const author_id = $('#editArtworkAuthor').val();
+  const style_id = $('#editArtworkStyle').val();
+  const genre_id = $('#editArtworkGenre').val();
+  const creation_year = $('#editArtworkCreationYear').val();
+  const width = $('#editArtworkWidth').val();
+  const height = $('#editArtworkHeight').val();
+  const description = $('#editArtworkDescription').val().trim();
+  const image = $('#editArtworkImage')[0].files[0];
+
+  const errors = [];
+
+  if (!title) {
+    errors.push({ field: 'editArtworkTitle', message: 'Название обязательно' });
+  } else if (title.length < 2 || title.length > 100) {
+    errors.push({ field: 'editArtworkTitle', message: 'Название должно быть от 2 до 100 символов' });
+  }
+
+  if (!author_id) {
+    errors.push({ field: 'editArtworkAuthor', message: 'Выберите автора' });
+  }
+
+  if (!style_id) {
+    errors.push({ field: 'editArtworkStyle', message: 'Выберите стиль' });
+  }
+
+  if (!genre_id) {
+    errors.push({ field: 'editArtworkGenre', message: 'Выберите жанр' });
+  }
+
+  if (creation_year) {
+    const year = parseInt(creation_year);
+    if (isNaN(year) || year > new Date().getFullYear()) {
+      errors.push({ field: 'editArtworkCreationYear', message: 'Неверный год создания' });
+    }
+  }
+
+  if (width) {
+    const widthValue = parseFloat(width);
+    if (isNaN(widthValue) || widthValue <= 0) {
+      errors.push({ field: 'editArtworkWidth', message: 'Ширина должна быть положительным числом' });
+    }
+  }
+
+  if (height) {
+    const heightValue = parseFloat(height);
+    if (isNaN(heightValue) || heightValue <= 0) {
+      errors.push({ field: 'editArtworkHeight', message: 'Высота должна быть положительным числом' });
+    }
+  }
+
+  if (description && description.length > 2000) {
+    errors.push({ field: 'editArtworkDescription', message: 'Описание не должно превышать 2000 символов' });
+  }
+
+  return errors;
+}
+
 // Функция добавления произведения
 function addArtwork(formData) {
   $.ajax({
@@ -315,11 +461,10 @@ function addArtwork(formData) {
     success: function(response) {
       if (response.status === "success") {
         $('#addArtworkModal').removeClass('active');
+        clearErrors();
         $('#addArtworkForm')[0].reset();
         $('#artworkImage').val('');
         loadArtworks();
-      } else {
-        alert(response.message || "Ошибка при добавлении произведения");
       }
     },
     error: function(xhr) {
@@ -327,17 +472,12 @@ function addArtwork(formData) {
         window.location.href = '/auth/login';
       } else if (xhr.status === 400) {
         const response = xhr.responseJSON;
-        console.log('Error response:', response);
         if (response.errors && response.errors.length > 0) {
-          const errorMessage = response.errors.map(err => err.msg).join('\n');
-          alert(errorMessage);
-        } else if (response.message) {
-          alert(response.message);
+          showErrors(response.errors);
         } else {
-          alert("Ошибка при добавлении произведения: " + JSON.stringify(response));
+          alert(response.message || "Ошибка при добавлении произведения");
         }
       } else {
-        console.error('Server error:', xhr.responseText);
         alert("Ошибка при добавлении произведения");
       }
     }
@@ -346,6 +486,7 @@ function addArtwork(formData) {
 
 // Функция редактирования произведения
 function editArtwork(id) {
+  clearErrors();
   $.ajax({
     url: `/api/v1/artworks/${id}`,
     method: 'GET',
@@ -364,8 +505,8 @@ function editArtwork(id) {
         $('#editArtworkDescription').val(artwork.description);
         
         // Преобразуем путь к изображению
-        const imagePath = artwork.image_path.split('/').pop(); // Получаем только имя файла
-        const imageUrl = `/upload/${imagePath}`; // Путь относительно public
+        const imagePath = artwork.image_path.split('/').pop();
+        const imageUrl = `/media/${imagePath}`;
         
         // Отображаем текущее изображение
         const previewHtml = `
@@ -397,12 +538,11 @@ function updateArtwork(id, formData) {
     success: function(response) {
       if (response.status === "success") {
         $('#editArtworkModal').removeClass('active');
+        clearErrors();
         $('#editArtworkForm')[0].reset();
         $('#editArtworkImage').val('');
         $('#currentImagePreview').empty();
         loadArtworks();
-      } else {
-        alert(response.message || "Ошибка при обновлении произведения");
       }
     },
     error: function(xhr) {
@@ -411,8 +551,7 @@ function updateArtwork(id, formData) {
       } else if (xhr.status === 400) {
         const response = xhr.responseJSON;
         if (response.errors && response.errors.length > 0) {
-          const errorMessage = response.errors.map(err => err.msg).join('\n');
-          alert(errorMessage);
+          showErrors(response.errors);
         } else {
           alert(response.message || "Ошибка при обновлении произведения");
         }
@@ -463,3 +602,8 @@ function confirmDelete(id) {
   $('#confirmDeleteBtn').data('artworkId', id);
   $('#deleteArtworkModal').addClass('active');
 }
+
+// Добавляем очистку ошибок при открытии модальных окон
+$('[data-modal="addArtworkModal"]').on('click', function() {
+  clearErrors();
+});

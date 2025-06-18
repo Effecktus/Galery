@@ -49,10 +49,12 @@
       </button>
     </div>
     <div class="modal-body">
+      <div class="modal-error" id="addGenreError"></div>
       <form id="addGenreForm">
         <div class="form-group">
           <label for="genreName">Название жанра</label>
           <input type="text" id="genreName" required />
+          <span class="error-message"></span>
         </div>
       </form>
     </div>
@@ -77,11 +79,13 @@
       </button>
     </div>
     <div class="modal-body">
+      <div class="modal-error" id="editGenreError"></div>
       <form id="editGenreForm">
         <input type="hidden" id="editGenreId" />
         <div class="form-group">
           <label for="editGenreName">Название жанра</label>
           <input type="text" id="editGenreName" required />
+          <span class="error-message"></span>
         </div>
       </form>
     </div>

@@ -49,10 +49,12 @@
       </button>
     </div>
     <div class="modal-body">
+      <div class="modal-error" id="addStyleError"></div>
       <form id="addStyleForm">
         <div class="form-group">
           <label for="styleName">Название стиля</label>
           <input type="text" id="styleName" required />
+          <span class="error-message"></span>
         </div>
       </form>
     </div>
@@ -61,7 +63,7 @@
         Отмена
       </button>
       <button type="button" class="btn btn-primary" id="saveStyleBtn">
-        Сохранить
+        <i class="fas fa-save"></i> Сохранить
       </button>
     </div>
   </div>
@@ -77,11 +79,13 @@
       </button>
     </div>
     <div class="modal-body">
+      <div class="modal-error" id="editStyleError"></div>
       <form id="editStyleForm">
         <input type="hidden" id="editStyleId" />
         <div class="form-group">
           <label for="editStyleName">Название стиля</label>
           <input type="text" id="editStyleName" required />
+          <span class="error-message"></span>
         </div>
       </form>
     </div>

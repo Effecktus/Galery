@@ -77,24 +77,28 @@
         <div class="form-group">
           <label for="artworkTitle">Название</label>
           <input type="text" id="artworkTitle" required />
+          <div class="error-message" id="artworkTitleError"></div>
         </div>
         <div class="form-group">
           <label for="artworkAuthor">Автор</label>
           <select id="artworkAuthor" required>
             <!-- Опции будут загружены через JavaScript -->
           </select>
+          <div class="error-message" id="artworkAuthorError"></div>
         </div>
         <div class="form-group">
           <label for="artworkStyle">Стиль</label>
           <select id="artworkStyle" required>
             <!-- Опции будут загружены через JavaScript -->
           </select>
+          <div class="error-message" id="artworkStyleError"></div>
         </div>
         <div class="form-group">
           <label for="artworkGenre">Жанр</label>
           <select id="artworkGenre" required>
             <!-- Опции будут загружены через JavaScript -->
           </select>
+          <div class="error-message" id="artworkGenreError"></div>
         </div>
         <div class="form-group">
           <label for="artworkCreationYear">Год создания</label>
@@ -104,22 +108,31 @@
             min="0"
             max="<%= new Date().getFullYear() %>"
           />
+          <div class="error-message" id="artworkCreationYearError"></div>
         </div>
         <div class="form-group">
           <label for="artworkWidth">Ширина (см)</label>
           <input type="number" id="artworkWidth" min="0" step="0.01" />
+          <div class="error-message" id="artworkWidthError"></div>
         </div>
         <div class="form-group">
           <label for="artworkHeight">Высота (см)</label>
           <input type="number" id="artworkHeight" min="0" step="0.01" />
+          <div class="error-message" id="artworkHeightError"></div>
         </div>
         <div class="form-group">
           <label for="artworkDescription">Описание</label>
-          <textarea id="artworkDescription" rows="4"></textarea>
+          <textarea
+            id="artworkDescription"
+            rows="4"
+            style="width: 100%; box-sizing: border-box"
+          ></textarea>
+          <div class="error-message" id="artworkDescriptionError"></div>
         </div>
         <div class="form-group">
           <label for="artworkImage">Изображение</label>
           <input type="file" id="artworkImage" accept="image/*" required />
+          <div class="error-message" id="artworkImageError"></div>
         </div>
       </form>
     </div>
@@ -149,24 +162,28 @@
         <div class="form-group">
           <label for="editArtworkTitle">Название</label>
           <input type="text" id="editArtworkTitle" required />
+          <div class="error-message" id="editArtworkTitleError"></div>
         </div>
         <div class="form-group">
           <label for="editArtworkAuthor">Автор</label>
           <select id="editArtworkAuthor" required>
             <!-- Опции будут загружены через JavaScript -->
           </select>
+          <div class="error-message" id="editArtworkAuthorError"></div>
         </div>
         <div class="form-group">
           <label for="editArtworkStyle">Стиль</label>
           <select id="editArtworkStyle" required>
             <!-- Опции будут загружены через JavaScript -->
           </select>
+          <div class="error-message" id="editArtworkStyleError"></div>
         </div>
         <div class="form-group">
           <label for="editArtworkGenre">Жанр</label>
           <select id="editArtworkGenre" required>
             <!-- Опции будут загружены через JavaScript -->
           </select>
+          <div class="error-message" id="editArtworkGenreError"></div>
         </div>
         <div class="form-group">
           <label for="editArtworkCreationYear">Год создания</label>
@@ -176,22 +193,31 @@
             min="0"
             max="<%= new Date().getFullYear() %>"
           />
+          <div class="error-message" id="editArtworkCreationYearError"></div>
         </div>
         <div class="form-group">
           <label for="editArtworkWidth">Ширина (см)</label>
           <input type="number" id="editArtworkWidth" min="0" step="0.01" />
+          <div class="error-message" id="editArtworkWidthError"></div>
         </div>
         <div class="form-group">
           <label for="editArtworkHeight">Высота (см)</label>
           <input type="number" id="editArtworkHeight" min="0" step="0.01" />
+          <div class="error-message" id="editArtworkHeightError"></div>
         </div>
         <div class="form-group">
           <label for="editArtworkDescription">Описание</label>
-          <textarea id="editArtworkDescription" rows="4"></textarea>
+          <textarea
+            id="editArtworkDescription"
+            rows="4"
+            style="width: 100%; box-sizing: border-box"
+          ></textarea>
+          <div class="error-message" id="editArtworkDescriptionError"></div>
         </div>
         <div class="form-group">
           <label for="editArtworkImage">Изображение</label>
           <input type="file" id="editArtworkImage" accept="image/*" />
+          <div class="error-message" id="editArtworkImageError"></div>
           <div id="currentImagePreview" class="image-preview"></div>
         </div>
       </form>

@@ -43,38 +43,37 @@ $(document).ready(function () {
 
   // Обработчик добавления автора
   $('#saveAuthorBtn').on('click', function () {
+    const errors = validateAddAuthorForm();
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
+    }
+
     const surname = $('#authorSurname').val();
     const first_name = $('#authorFirstName').val();
     const patronymic = $('#authorPatronymic').val();
     const date_of_birth = $('#authorDateOfBirth').val();
     const date_of_death = $('#authorDateOfDeath').val();
 
-    // Проверка на пустые поля
-    if (!surname || !first_name || !patronymic || !date_of_birth || !date_of_death) {
-      alert('Пожалуйста, заполните все поля');
-      return;
-    }
-
-    // Проверка дат
-    if (new Date(date_of_death) <= new Date(date_of_birth)) {
-      alert('Дата смерти должна быть позже даты рождения');
-      return;
-    }
-
     addAuthor(surname, first_name, patronymic, date_of_birth, date_of_death);
   });
 
   // Обработчик обновления автора
   $('#updateAuthorBtn').on('click', function () {
+    const errors = validateEditAuthorForm();
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
+    }
+
     const id = $('#editAuthorId').val();
     const surname = $('#editAuthorSurname').val();
     const first_name = $('#editAuthorFirstName').val();
     const patronymic = $('#editAuthorPatronymic').val();
     const date_of_birth = $('#editAuthorDateOfBirth').val();
     const date_of_death = $('#editAuthorDateOfDeath').val();
-    if (id && surname && first_name && patronymic && date_of_birth && date_of_death) {
-      updateAuthor(id, surname, first_name, patronymic, date_of_birth, date_of_death);
-    }
+
+    updateAuthor(id, surname, first_name, patronymic, date_of_birth, date_of_death);
   });
 
   // Обработчик удаления автора
@@ -189,14 +188,13 @@ function addAuthor(surname, first_name, patronymic, date_of_birth, date_of_death
     success: function(response) {
       if (response.status === "success") {
         $('#addAuthorModal').removeClass('active');
+        clearErrors();
         $('#authorSurname').val('');
         $('#authorFirstName').val('');
         $('#authorPatronymic').val('');
         $('#authorDateOfBirth').val('');
         $('#authorDateOfDeath').val('');
         loadAuthors();
-      } else {
-        alert(response.message || "Ошибка при добавлении автора");
       }
     },
     error: function(xhr) {
@@ -205,8 +203,7 @@ function addAuthor(surname, first_name, patronymic, date_of_birth, date_of_death
       } else if (xhr.status === 400) {
         const response = xhr.responseJSON;
         if (response.errors && response.errors.length > 0) {
-          const errorMessage = response.errors.map(err => err.msg).join('\n');
-          alert(errorMessage);
+          showErrors(response.errors);
         } else {
           alert(response.message || "Ошибка при добавлении автора");
         }
@@ -219,6 +216,7 @@ function addAuthor(surname, first_name, patronymic, date_of_birth, date_of_death
 
 // Функция редактирования автора
 function editAuthor(id, surname, first_name, patronymic, date_of_birth, date_of_death) {
+  clearErrors();
   $('#editAuthorId').val(id);
   $('#editAuthorSurname').val(surname);
   $('#editAuthorFirstName').val(first_name);
@@ -237,22 +235,25 @@ function updateAuthor(id, surname, first_name, patronymic, date_of_birth, date_o
     data: JSON.stringify({ surname, first_name, patronymic, date_of_birth, date_of_death }),
     success: function(response) {
       if (response.status === "success") {
-        // Закрываем модальное окно
         $('#editAuthorModal').removeClass('active');
-
-        // Перезагружаем список авторов
+        clearErrors();
         loadAuthors();
-      } else {
-        alert(response.message || "Ошибка при обновлении автора");
       }
-      },
-      error: function(xhr) {
-        if (xhr.status === 401) {
-          window.location.href = '/auth/login';
+    },
+    error: function(xhr) {
+      if (xhr.status === 401) {
+        window.location.href = '/auth/login';
+      } else if (xhr.status === 400) {
+        const response = xhr.responseJSON;
+        if (response.errors && response.errors.length > 0) {
+          showErrors(response.errors);
         } else {
-          alert("Ошибка при обновлении автора");
+          alert(response.message || "Ошибка при обновлении автора");
         }
+      } else {
+        alert("Ошибка при обновлении автора");
       }
+    }
   });
 }
 
@@ -299,4 +300,109 @@ function deleteAuthor(id) {
 function confirmDelete(id) {
   $('#confirmDeleteBtn').data('authorId', id);
   $('#deleteAuthorModal').addClass('active');
-} ;
+}
+
+// Функция для очистки ошибок
+function clearErrors() {
+  $('.error-message').text('');
+  $('.form-group').removeClass('error');
+  $('.form-group input').removeClass('error');
+}
+
+// Функция для отображения ошибок
+function showErrors(errors) {
+  clearErrors();
+  if (errors && errors.length > 0) {
+    errors.forEach(error => {
+      const field = error.field;
+      const message = error.message;
+      const formGroup = $(`#${field}`).closest('.form-group');
+      formGroup.addClass('error');
+      $(`#${field}`).addClass('error');
+      $(`#${field}Error`).text(message);
+    });
+  }
+}
+
+// Функция валидации формы добавления автора
+function validateAddAuthorForm() {
+  const surname = $('#authorSurname').val().trim();
+  const first_name = $('#authorFirstName').val().trim();
+  const patronymic = $('#authorPatronymic').val().trim();
+  const date_of_birth = $('#authorDateOfBirth').val();
+  const date_of_death = $('#authorDateOfDeath').val();
+
+  const errors = [];
+
+  if (!surname) {
+    errors.push({ field: 'authorSurname', message: 'Фамилия обязательна' });
+  } else if (surname.length < 2 || surname.length > 50) {
+    errors.push({ field: 'authorSurname', message: 'Фамилия должна быть от 2 до 50 символов' });
+  }
+
+  if (!first_name) {
+    errors.push({ field: 'authorFirstName', message: 'Имя обязательно' });
+  } else if (first_name.length < 2 || first_name.length > 50) {
+    errors.push({ field: 'authorFirstName', message: 'Имя должно быть от 2 до 50 символов' });
+  }
+
+  if (patronymic && (patronymic.length < 2 || patronymic.length > 50)) {
+    errors.push({ field: 'authorPatronymic', message: 'Отчество должно быть от 2 до 50 символов' });
+  }
+
+  if (!date_of_birth) {
+    errors.push({ field: 'authorDateOfBirth', message: 'Дата рождения обязательна' });
+  }
+
+  if (!date_of_death) {
+    errors.push({ field: 'authorDateOfDeath', message: 'Дата смерти обязательна' });
+  } else if (new Date(date_of_death) <= new Date(date_of_birth)) {
+    errors.push({ field: 'authorDateOfDeath', message: 'Дата смерти должна быть позже даты рождения' });
+  }
+
+  return errors;
+}
+
+// Функция валидации формы редактирования автора
+function validateEditAuthorForm() {
+  const surname = $('#editAuthorSurname').val().trim();
+  const first_name = $('#editAuthorFirstName').val().trim();
+  const patronymic = $('#editAuthorPatronymic').val().trim();
+  const date_of_birth = $('#editAuthorDateOfBirth').val();
+  const date_of_death = $('#editAuthorDateOfDeath').val();
+
+  const errors = [];
+
+  if (!surname) {
+    errors.push({ field: 'editAuthorSurname', message: 'Фамилия обязательна' });
+  } else if (surname.length < 2 || surname.length > 50) {
+    errors.push({ field: 'editAuthorSurname', message: 'Фамилия должна быть от 2 до 50 символов' });
+  }
+
+  if (!first_name) {
+    errors.push({ field: 'editAuthorFirstName', message: 'Имя обязательно' });
+  } else if (first_name.length < 2 || first_name.length > 50) {
+    errors.push({ field: 'editAuthorFirstName', message: 'Имя должно быть от 2 до 50 символов' });
+  }
+
+  if (patronymic && (patronymic.length < 2 || patronymic.length > 50)) {
+    errors.push({ field: 'editAuthorPatronymic', message: 'Отчество должно быть от 2 до 50 символов' });
+  }
+
+  if (!date_of_birth) {
+    errors.push({ field: 'editAuthorDateOfBirth', message: 'Дата рождения обязательна' });
+  }
+
+  if (!date_of_death) {
+    errors.push({ field: 'editAuthorDateOfDeath', message: 'Дата смерти обязательна' });
+  } else if (new Date(date_of_death) <= new Date(date_of_birth)) {
+    errors.push({ field: 'editAuthorDateOfDeath', message: 'Дата смерти должна быть позже даты рождения' });
+  }
+
+  return errors;
+}
+
+// Добавляем очистку ошибок при открытии модальных окон
+$('[data-modal="addAuthorModal"]').on('click', function() {
+  clearErrors();
+});

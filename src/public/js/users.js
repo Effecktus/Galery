@@ -43,6 +43,12 @@ $(document).ready(function () {
 
   // Обработчик добавления пользователя
   $('#saveUserBtn').on('click', function () {
+    const errors = validateAddUserForm();
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
+    }
+
     const surname = $('#userSurname').val();
     const first_name = $('#userFirstName').val();
     const patronymic = $('#userPatronymic').val();
@@ -50,17 +56,17 @@ $(document).ready(function () {
     const password = $('#userPassword').val();
     const role = $('#userRole').val();
 
-    // Проверка на пустые поля
-    if (!surname || !first_name || !email || !password || !role) {
-      alert('Пожалуйста, заполните все обязательные поля');
-      return;
-    }
-
     addUser(surname, first_name, patronymic, email, password, role);
   });
 
   // Обработчик обновления пользователя
   $('#updateUserBtn').on('click', function () {
+    const errors = validateEditUserForm();
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
+    }
+
     const id = $('#editUserId').val();
     const surname = $('#editUserSurname').val();
     const first_name = $('#editUserFirstName').val();
@@ -69,9 +75,7 @@ $(document).ready(function () {
     const password = $('#editUserPassword').val();
     const role = $('#editUserRole').val();
 
-    if (id && surname && first_name && email && role) {
-      updateUser(id, surname, first_name, patronymic, email, password, role);
-    }
+    updateUser(id, surname, first_name, patronymic, email, password, role);
   });
 
   // Обработчик удаления пользователя
@@ -176,6 +180,118 @@ function loadUsers(searchTerm = "") {
   });
 }
 
+// Функция для очистки ошибок
+function clearErrors() {
+  $('.error-message').text('');
+  $('.form-group').removeClass('error');
+  $('.form-group input, .form-group select').removeClass('error');
+}
+
+// Функция для отображения ошибок
+function showErrors(errors) {
+  clearErrors();
+  if (errors && errors.length > 0) {
+    errors.forEach(error => {
+      const field = error.field;
+      const message = error.message;
+      const formGroup = $(`#${field}`).closest('.form-group');
+      formGroup.addClass('error');
+      $(`#${field}`).addClass('error');
+      $(`#${field}Error`).text(message);
+    });
+  }
+}
+
+// Функция валидации формы добавления пользователя
+function validateAddUserForm() {
+  const surname = $('#userSurname').val().trim();
+  const first_name = $('#userFirstName').val().trim();
+  const patronymic = $('#userPatronymic').val().trim();
+  const email = $('#userEmail').val().trim();
+  const password = $('#userPassword').val();
+  const role = $('#userRole').val();
+
+  const errors = [];
+
+  if (!surname) {
+    errors.push({ field: 'userSurname', message: 'Фамилия обязательна' });
+  } else if (surname.length < 2 || surname.length > 50) {
+    errors.push({ field: 'userSurname', message: 'Фамилия должна быть от 2 до 50 символов' });
+  }
+
+  if (!first_name) {
+    errors.push({ field: 'userFirstName', message: 'Имя обязательно' });
+  } else if (first_name.length < 2 || first_name.length > 50) {
+    errors.push({ field: 'userFirstName', message: 'Имя должно быть от 2 до 50 символов' });
+  }
+
+  if (patronymic && (patronymic.length < 2 || patronymic.length > 50)) {
+    errors.push({ field: 'userPatronymic', message: 'Отчество должно быть от 2 до 50 символов' });
+  }
+
+  if (!email) {
+    errors.push({ field: 'userEmail', message: 'Email обязателен' });
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.push({ field: 'userEmail', message: 'Неверный формат email' });
+  }
+
+  if (!password) {
+    errors.push({ field: 'userPassword', message: 'Пароль обязателен' });
+  } else if (password.length < 8) {
+    errors.push({ field: 'userPassword', message: 'Пароль должен быть не менее 8 символов' });
+  }
+
+  if (!role) {
+    errors.push({ field: 'userRole', message: 'Роль обязательна' });
+  }
+
+  return errors;
+}
+
+// Функция валидации формы редактирования пользователя
+function validateEditUserForm() {
+  const surname = $('#editUserSurname').val().trim();
+  const first_name = $('#editUserFirstName').val().trim();
+  const patronymic = $('#editUserPatronymic').val().trim();
+  const email = $('#editUserEmail').val().trim();
+  const password = $('#editUserPassword').val();
+  const role = $('#editUserRole').val();
+
+  const errors = [];
+
+  if (!surname) {
+    errors.push({ field: 'editUserSurname', message: 'Фамилия обязательна' });
+  } else if (surname.length < 2 || surname.length > 50) {
+    errors.push({ field: 'editUserSurname', message: 'Фамилия должна быть от 2 до 50 символов' });
+  }
+
+  if (!first_name) {
+    errors.push({ field: 'editUserFirstName', message: 'Имя обязательно' });
+  } else if (first_name.length < 2 || first_name.length > 50) {
+    errors.push({ field: 'editUserFirstName', message: 'Имя должно быть от 2 до 50 символов' });
+  }
+
+  if (patronymic && (patronymic.length < 2 || patronymic.length > 50)) {
+    errors.push({ field: 'editUserPatronymic', message: 'Отчество должно быть от 2 до 50 символов' });
+  }
+
+  if (!email) {
+    errors.push({ field: 'editUserEmail', message: 'Email обязателен' });
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.push({ field: 'editUserEmail', message: 'Неверный формат email' });
+  }
+
+  if (password && password.length < 8) {
+    errors.push({ field: 'editUserPassword', message: 'Пароль должен быть не менее 8 символов' });
+  }
+
+  if (!role) {
+    errors.push({ field: 'editUserRole', message: 'Роль обязательна' });
+  }
+
+  return errors;
+}
+
 // Функция добавления пользователя
 function addUser(surname, first_name, patronymic, email, password, role) {
   $.ajax({
@@ -186,6 +302,7 @@ function addUser(surname, first_name, patronymic, email, password, role) {
     success: function(response) {
       if (response.status === "success") {
         $('#addUserModal').removeClass('active');
+        clearErrors();
         $('#userSurname').val('');
         $('#userFirstName').val('');
         $('#userPatronymic').val('');
@@ -193,8 +310,6 @@ function addUser(surname, first_name, patronymic, email, password, role) {
         $('#userPassword').val('');
         $('#userRole').val('user');
         loadUsers();
-      } else {
-        alert(response.message || "Ошибка при добавлении пользователя");
       }
     },
     error: function(xhr) {
@@ -203,8 +318,7 @@ function addUser(surname, first_name, patronymic, email, password, role) {
       } else if (xhr.status === 400) {
         const response = xhr.responseJSON;
         if (response.errors && response.errors.length > 0) {
-          const errorMessage = response.errors.map(err => err.message).join('\n');
-          alert(errorMessage);
+          showErrors(response.errors);
         } else {
           alert(response.message || "Ошибка при добавлении пользователя");
         }
@@ -217,6 +331,7 @@ function addUser(surname, first_name, patronymic, email, password, role) {
 
 // Функция редактирования пользователя
 function editUser(id, surname, first_name, patronymic, email, role) {
+  clearErrors();
   $('#editUserId').val(id);
   $('#editUserSurname').val(surname);
   $('#editUserFirstName').val(first_name);
@@ -242,9 +357,8 @@ function updateUser(id, surname, first_name, patronymic, email, password, role) 
     success: function(response) {
       if (response.status === "success") {
         $('#editUserModal').removeClass('active');
+        clearErrors();
         loadUsers();
-      } else {
-        alert(response.message || "Ошибка при обновлении пользователя");
       }
     },
     error: function(xhr) {
@@ -253,8 +367,7 @@ function updateUser(id, surname, first_name, patronymic, email, password, role) 
       } else if (xhr.status === 400) {
         const response = xhr.responseJSON;
         if (response.errors && response.errors.length > 0) {
-          const errorMessage = response.errors.map(err => err.message).join('\n');
-          alert(errorMessage);
+          showErrors(response.errors);
         } else {
           alert(response.message || "Ошибка при обновлении пользователя");
         }
@@ -302,3 +415,8 @@ function confirmDelete(id) {
   $('#confirmDeleteBtn').data('userId', id);
   $('#deleteUserModal').addClass('active');
 }
+
+// Добавляем очистку ошибок при открытии модальных окон
+$('[data-modal="addUserModal"]').on('click', function() {
+  clearErrors();
+});

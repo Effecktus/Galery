@@ -8,6 +8,19 @@ $(document).ready(function () {
   // Загрузка жанров при загрузке страницы
   loadGenres();
 
+  // Обработчик открытия модального окна добавления
+  $('[data-modal="addGenreModal"]').on('click', function() {
+    $('#addGenreModal').addClass('active');
+    setTimeout(() => {
+      clearErrors('addGenreForm');
+    }, 0);
+  });
+
+  // Обработчик закрытия модальных окон
+  $('.modal-close').on('click', function() {
+    $(this).closest('.modal').removeClass('active');
+  });
+
   // Переменная для хранения таймера
   let searchTimer;
 
@@ -43,17 +56,17 @@ $(document).ready(function () {
 
   // Обработчик добавления жанра
   $('#saveGenreBtn').on('click', function () {
-    const name = $('#genreName').val();
-    if (name) {
+    if (validateGenreForm('addGenreForm', 'genreName')) {
+      const name = $('#genreName').val();
       addGenre(name);
     }
   });
 
   // Обработчик обновления жанра
   $('#updateGenreBtn').on('click', function () {
-    const id = $('#editGenreId').val();
-    const name = $('#editGenreName').val();
-    if (id && name) {
+    if (validateGenreForm('editGenreForm', 'editGenreName')) {
+      const id = $('#editGenreId').val();
+      const name = $('#editGenreName').val();
       updateGenre(id, name);
     }
   });
@@ -66,6 +79,53 @@ $(document).ready(function () {
     }
   });
 });
+
+// Функция для очистки ошибок
+function clearErrors(formId) {
+  const form = document.getElementById(formId);
+  if (!form) return;
+
+  const errorContainer = document.getElementById(formId + 'Error');
+  const errorMessages = form.querySelectorAll('.error-message');
+  const formGroups = form.querySelectorAll('.form-group');
+
+  if (errorContainer) errorContainer.classList.remove('active');
+  if (errorContainer) errorContainer.textContent = '';
+  errorMessages.forEach(msg => msg.textContent = '');
+  formGroups.forEach(group => group.classList.remove('error'));
+}
+
+// Функция для отображения ошибок
+function showError(formId, fieldName, message) {
+  const form = document.getElementById(formId);
+  const field = form.querySelector(`#${fieldName}`);
+  const formGroup = field.closest('.form-group');
+  const errorMessage = formGroup.querySelector('.error-message');
+  const errorContainer = document.getElementById(formId + 'Error');
+
+  formGroup.classList.add('error');
+  errorMessage.textContent = message;
+  errorContainer.textContent = 'Пожалуйста, исправьте ошибки в форме';
+  errorContainer.classList.add('active');
+}
+
+// Функция валидации формы
+function validateGenreForm(formId, nameFieldId) {
+  const name = document.getElementById(nameFieldId).value.trim();
+  let isValid = true;
+
+  clearErrors(formId);
+
+  if (!name) {
+    showError(formId, nameFieldId, 'Название жанра обязательно');
+    isValid = false;
+  } else if (name.length < 2 || name.length > 50) {
+    showError(formId, nameFieldId, 'Название должно быть от 2 до 50 символов');
+    isValid = false;
+  }
+
+  return isValid;
+}
 
 // Функция загрузки жанров
 function loadGenres(searchTerm = "") {
@@ -115,16 +175,28 @@ function loadGenres(searchTerm = "") {
               <td>${genre.name}</td>
               <td>${genre.statistics.total_artworks}</td>
               <td>
-                <button class="btn btn-sm btn-primary me-2" onclick="editGenre(${genre.id}, '${genre.name}')">
-                  <i class="fas fa-edit"></i>Изменить
+                <button class="btn btn-sm btn-primary me-2 edit-genre-btn" data-id="${genre.id}" data-name="${genre.name}">
+                  <i class="fas fa-edit"></i> Изменить
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${genre.id})">
-                  <i class="fas fa-trash"></i>Удалить
+                <button class="btn btn-sm btn-danger delete-genre-btn" data-id="${genre.id}">
+                  <i class="fas fa-trash"></i> Удалить
                 </button>
               </td>
             </tr>
           `;
           tbody.append(row);
+        });
+
+        // Добавляем обработчики для кнопок после добавления строк в таблицу
+        $('.edit-genre-btn').on('click', function() {
+          const id = $(this).data('id');
+          const name = $(this).data('name');
+          editGenre(id, name);
+        });
+
+        $('.delete-genre-btn').on('click', function() {
+          const id = $(this).data('id');
+          confirmDelete(id);
         });
       }
     },
@@ -147,28 +219,36 @@ function addGenre(name) {
     data: JSON.stringify({ name }),
     success: function(response) {
       if (response.status === "success") {
-          // Закрываем модальное окно и очищаем форму
-          $('#addGenreModal').removeClass('active');
-          $('#genreName').val('');
-
-          // Перезагружаем список жанров
-          loadGenres();
-        } else {
-          alert(response.message || "Ошибка при добавлении жанра");
-        }
-      },
-      error: function(xhr) {
-        if (xhr.status === 401) {
-          window.location.href = '/auth/login';
-        } else {
-          alert("Ошибка при добавлении жанра");
-        }
+        $('#addGenreModal').removeClass('active');
+        $('#genreName').val('');
+        clearErrors('addGenreForm');
+        loadGenres();
+      } else {
+        showError('addGenreForm', 'genreName', response.message || "Ошибка при добавлении жанра");
       }
+    },
+    error: function(xhr) {
+      if (xhr.status === 401) {
+        window.location.href = '/auth/login';
+      } else if (xhr.status === 400) {
+        const response = xhr.responseJSON;
+        if (response.errors && response.errors.length > 0) {
+          response.errors.forEach(error => {
+            showError('addGenreForm', 'genreName', error.message);
+          });
+        } else {
+          showError('addGenreForm', 'genreName', response.message || "Ошибка при добавлении жанра");
+        }
+      } else {
+        showError('addGenreForm', 'genreName', "Ошибка при добавлении жанра");
+      }
+    }
   });
 }
 
 // Функция редактирования жанра
 function editGenre(id, name) {
+  clearErrors('editGenreForm');
   $('#editGenreId').val(id);
   $('#editGenreName').val(name);
   $('#editGenreModal').addClass('active');
@@ -185,20 +265,28 @@ function updateGenre(id, name) {
       if (response.status === "success") {
         // Закрываем модальное окно
         $('#editGenreModal').removeClass('active');
-
-        // Перезагружаем список жанров
+        clearErrors('editGenreForm');
         loadGenres();
       } else {
-        alert(response.message || "Ошибка при обновлении жанра");
+        showError('editGenreForm', 'editGenreName', response.message || "Ошибка при обновлении жанра");
       }
-      },
-      error: function(xhr) {
-        if (xhr.status === 401) {
-          window.location.href = '/auth/login';
+    },
+    error: function(xhr) {
+      if (xhr.status === 401) {
+        window.location.href = '/auth/login';
+      } else if (xhr.status === 400) {
+        const response = xhr.responseJSON;
+        if (response.errors && response.errors.length > 0) {
+          response.errors.forEach(error => {
+            showError('editGenreForm', 'editGenreName', error.message);
+          });
         } else {
-          alert("Ошибка при обновлении жанра");
+          showError('editGenreForm', 'editGenreName', response.message || "Ошибка при обновлении жанра");
         }
+      } else {
+        showError('editGenreForm', 'editGenreName', "Ошибка при обновлении жанра");
       }
+    }
   });
 }
 
@@ -224,9 +312,7 @@ function deleteGenre(id) {
       } else if (xhr.status === 400) {
         const response = xhr.responseJSON;
         if (response.errors && response.errors.length > 0) {
-          // Обработка ошибок валидации
-          const errorMessage = response.errors.map(err => err.msg).join('\n');
-          alert(errorMessage);
+          alert(response.errors.map(err => err.msg).join('\n'));
         } else if (response.data && response.data.artworksCount) {
           alert(`Невозможно удалить жанр: он используется в ${response.data.artworksCount} произведениях`);
         } else {
@@ -245,4 +331,4 @@ function deleteGenre(id) {
 function confirmDelete(id) {
   $('#confirmDeleteBtn').data('genreId', id);
   $('#deleteGenreModal').addClass('active');
-} ;
+}

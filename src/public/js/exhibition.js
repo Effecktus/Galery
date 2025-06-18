@@ -43,6 +43,12 @@ $(document).ready(function () {
 
   // Обработчик добавления выставки
   $('#saveExhibitionBtn').on('click', function () {
+    const errors = validateAddExhibitionForm();
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
+    }
+
     const formData = {
       title: $('#exhibitionTitle').val().trim(),
       location: $('#exhibitionLocation').val().trim(),
@@ -59,6 +65,12 @@ $(document).ready(function () {
 
   // Обработчик обновления выставки
   $('#updateExhibitionBtn').on('click', function () {
+    const errors = validateEditExhibitionForm();
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
+    }
+
     const id = $('#editExhibitionId').val();
     const formData = {
       title: $('#editExhibitionTitle').val().trim(),
@@ -219,10 +231,9 @@ function addExhibition(formData) {
     success: function(response) {
       if (response.status === "success") {
         $('#addExhibitionModal').removeClass('active');
+        clearErrors();
         $('#addExhibitionForm')[0].reset();
         loadExhibitions();
-      } else {
-        alert(response.message || "Ошибка при добавлении выставки");
       }
     },
     error: function(xhr) {
@@ -231,12 +242,9 @@ function addExhibition(formData) {
       } else if (xhr.status === 400) {
         const response = xhr.responseJSON;
         if (response.errors && response.errors.length > 0) {
-          const errorMessage = response.errors.map(err => err.msg).join('\n');
-          alert(errorMessage);
-        } else if (response.message) {
-          alert(response.message);
+          showErrors(response.errors);
         } else {
-          alert("Ошибка при добавлении выставки");
+          alert(response.message || "Ошибка при добавлении выставки");
         }
       } else {
         alert("Ошибка при добавлении выставки");
@@ -247,6 +255,7 @@ function addExhibition(formData) {
 
 // Функция редактирования выставки
 function editExhibition(id) {
+  clearErrors();
   $.ajax({
     url: `/api/v1/exhibitions/${id}`,
     method: 'GET',
@@ -289,10 +298,9 @@ function updateExhibition(id, formData) {
     success: function(response) {
       if (response.status === "success") {
         $('#editExhibitionModal').removeClass('active');
+        clearErrors();
         $('#editExhibitionForm')[0].reset();
         loadExhibitions();
-      } else {
-        alert(response.message || "Ошибка при обновлении выставки");
       }
     },
     error: function(xhr) {
@@ -301,8 +309,7 @@ function updateExhibition(id, formData) {
       } else if (xhr.status === 400) {
         const response = xhr.responseJSON;
         if (response.errors && response.errors.length > 0) {
-          const errorMessage = response.errors.map(err => err.msg).join('\n');
-          alert(errorMessage);
+          showErrors(response.errors);
         } else {
           alert(response.message || "Ошибка при обновлении выставки");
         }
@@ -420,3 +427,152 @@ function showExhibitionDetails(id) {
     }
   });
 }
+
+// Функция для очистки ошибок
+function clearErrors() {
+  $('.error-message').text('');
+  $('.form-group').removeClass('error');
+  $('.form-group input, .form-group select, .form-group textarea').removeClass('error');
+}
+
+// Функция для отображения ошибок
+function showErrors(errors) {
+  clearErrors();
+  if (errors && errors.length > 0) {
+    errors.forEach(error => {
+      const field = error.field;
+      const message = error.message;
+      const formGroup = $(`#${field}`).closest('.form-group');
+      formGroup.addClass('error');
+      $(`#${field}`).addClass('error');
+      $(`#${field}Error`).text(message);
+    });
+  }
+}
+
+// Функция валидации формы добавления выставки
+function validateAddExhibitionForm() {
+  const title = $('#exhibitionTitle').val().trim();
+  const location = $('#exhibitionLocation').val().trim();
+  const start_date = $('#exhibitionStartDate').val();
+  const end_date = $('#exhibitionEndDate').val();
+  const status = $('#exhibitionStatus').val();
+  const ticket_price = $('#exhibitionTicketPrice').val();
+  const description = $('#exhibitionDescription').val().trim();
+  const artwork_ids = $('#exhibitionArtworks').val();
+
+  const errors = [];
+
+  if (!title) {
+    errors.push({ field: 'exhibitionTitle', message: 'Название обязательно' });
+  } else if (title.length < 2 || title.length > 100) {
+    errors.push({ field: 'exhibitionTitle', message: 'Название должно быть от 2 до 100 символов' });
+  }
+
+  if (!location) {
+    errors.push({ field: 'exhibitionLocation', message: 'Место проведения обязательно' });
+  } else if (location.length < 2 || location.length > 100) {
+    errors.push({ field: 'exhibitionLocation', message: 'Место проведения должно быть от 2 до 100 символов' });
+  }
+
+  if (!start_date) {
+    errors.push({ field: 'exhibitionStartDate', message: 'Дата начала обязательна' });
+  }
+
+  if (!end_date) {
+    errors.push({ field: 'exhibitionEndDate', message: 'Дата окончания обязательна' });
+  } else if (start_date && new Date(end_date) <= new Date(start_date)) {
+    errors.push({ field: 'exhibitionEndDate', message: 'Дата окончания должна быть позже даты начала' });
+  }
+
+  if (!status) {
+    errors.push({ field: 'exhibitionStatus', message: 'Статус обязателен' });
+  } else if (!['planned', 'active', 'completed'].includes(status)) {
+    errors.push({ field: 'exhibitionStatus', message: 'Неверный статус выставки' });
+  }
+
+  if (!ticket_price) {
+    errors.push({ field: 'exhibitionTicketPrice', message: 'Цена билета обязательна' });
+  } else {
+    const price = parseFloat(ticket_price);
+    if (isNaN(price) || price < 0) {
+      errors.push({ field: 'exhibitionTicketPrice', message: 'Цена билета должна быть положительным числом' });
+    }
+  }
+
+  if (description && description.length > 2000) {
+    errors.push({ field: 'exhibitionDescription', message: 'Описание не должно превышать 2000 символов' });
+  }
+
+  if (!artwork_ids || artwork_ids.length === 0) {
+    errors.push({ field: 'exhibitionArtworks', message: 'Выберите хотя бы одно произведение искусства' });
+  }
+
+  return errors;
+}
+
+// Функция валидации формы редактирования выставки
+function validateEditExhibitionForm() {
+  const title = $('#editExhibitionTitle').val().trim();
+  const location = $('#editExhibitionLocation').val().trim();
+  const start_date = $('#editExhibitionStartDate').val();
+  const end_date = $('#editExhibitionEndDate').val();
+  const status = $('#editExhibitionStatus').val();
+  const ticket_price = $('#editExhibitionTicketPrice').val();
+  const description = $('#editExhibitionDescription').val().trim();
+  const artwork_ids = $('#editExhibitionArtworks').val();
+
+  const errors = [];
+
+  if (!title) {
+    errors.push({ field: 'editExhibitionTitle', message: 'Название обязательно' });
+  } else if (title.length < 2 || title.length > 100) {
+    errors.push({ field: 'editExhibitionTitle', message: 'Название должно быть от 2 до 100 символов' });
+  }
+
+  if (!location) {
+    errors.push({ field: 'editExhibitionLocation', message: 'Место проведения обязательно' });
+  } else if (location.length < 2 || location.length > 100) {
+    errors.push({ field: 'editExhibitionLocation', message: 'Место проведения должно быть от 2 до 100 символов' });
+  }
+
+  if (!start_date) {
+    errors.push({ field: 'editExhibitionStartDate', message: 'Дата начала обязательна' });
+  }
+
+  if (!end_date) {
+    errors.push({ field: 'editExhibitionEndDate', message: 'Дата окончания обязательна' });
+  } else if (start_date && new Date(end_date) <= new Date(start_date)) {
+    errors.push({ field: 'editExhibitionEndDate', message: 'Дата окончания должна быть позже даты начала' });
+  }
+
+  if (!status) {
+    errors.push({ field: 'editExhibitionStatus', message: 'Статус обязателен' });
+  } else if (!['planned', 'active', 'completed'].includes(status)) {
+    errors.push({ field: 'editExhibitionStatus', message: 'Неверный статус выставки' });
+  }
+
+  if (!ticket_price) {
+    errors.push({ field: 'editExhibitionTicketPrice', message: 'Цена билета обязательна' });
+  } else {
+    const price = parseFloat(ticket_price);
+    if (isNaN(price) || price < 0) {
+      errors.push({ field: 'editExhibitionTicketPrice', message: 'Цена билета должна быть положительным числом' });
+    }
+  }
+
+  if (description && description.length > 2000) {
+    errors.push({ field: 'editExhibitionDescription', message: 'Описание не должно превышать 2000 символов' });
+  }
+
+  if (!artwork_ids || artwork_ids.length === 0) {
+    errors.push({ field: 'editExhibitionArtworks', message: 'Выберите хотя бы одно произведение искусства' });
+  }
+
+  return errors;
+}
+
+// Добавляем очистку ошибок при открытии модальных окон
+$('[data-modal="addExhibitionModal"]').on('click', function() {
+  clearErrors();
+});

@@ -136,7 +136,7 @@ $(document).ready(function () {
 // Функция загрузки произведений
 function loadArtworks(searchTerm = "") {
   $.ajax({
-    url: `/api/v1/artworks${searchTerm ? `?search=${searchTerm}` : ""}`,
+    url: `/api/v1/artworks${searchTerm ? `?search=${encodeURIComponent(searchTerm.trim())}` : ""}`,
     method: 'GET',
     success: function(response) {
       if (response.status === "success") {

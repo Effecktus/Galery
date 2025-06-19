@@ -36,18 +36,18 @@ module.exports = (sequelize) => {
       validate: { min: 1 }
     },
     status: {
-      type: DataTypes.ENUM('upcoming', 'completed'),
+      type: DataTypes.ENUM('upcoming', 'active', 'completed'),
       allowNull: false,
       defaultValue: 'upcoming'
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true
     },
     remaining_tickets: {
       type: DataTypes.INTEGER,
       allowNull: false,
       validate: { min: 0 }
-    },
-    description: {
-      type: DataTypes.TEXT,
-      allowNull: true
     }
   }, {
     timestamps: true,
@@ -56,10 +56,12 @@ module.exports = (sequelize) => {
     hooks: {
       beforeSave: async (exhibition) => {
         const now = new Date();
-        if (exhibition.end_date < now) {
-          exhibition.status = 'completed';
-        } else {
+        if (exhibition.start_date > now) {
           exhibition.status = 'upcoming';
+        } else if (exhibition.start_date <= now && exhibition.end_date > now) {
+          exhibition.status = 'active';
+        } else if (exhibition.end_date <= now) {
+          exhibition.status = 'completed';
         }
       }
     },

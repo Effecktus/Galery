@@ -28,7 +28,10 @@ exports.createExhibition = async (req, res) => {
       }
     }
 
-    const exhibition = await Exhibition.create(req.body);
+    // При создании выставки игнорирую переданное значение remaining_tickets
+    const data = { ...req.body };
+    data.remaining_tickets = data.total_tickets;
+    const exhibition = await Exhibition.create(data);
 
     const exhibitionData = await Exhibition.findByPk(exhibition.id, {
       include: [{ 
@@ -71,10 +74,10 @@ exports.getAllExhibitions = async (req, res) => {
     const where = {};
     
     if (req.query.status) {
-      if (!['planned', 'active', 'completed'].includes(req.query.status)) {
+      if (!['upcoming', 'active', 'completed'].includes(req.query.status)) {
         return res.status(400).json({
           status: 'error',
-          message: 'Некорректный статус выставки. Допустимые значения: planned, active, completed'
+          message: 'Некорректный статус выставки. Допустимые значения: upcoming, active, completed'
         });
       }
       where.status = req.query.status;
@@ -134,6 +137,19 @@ exports.getAllExhibitions = async (req, res) => {
         });
       }
       where.ticket_price = { ...where.ticket_price, [Op.lte]: maxPrice };
+    }
+
+    // Многословный поиск по всем основным полям
+    if (req.query.search) {
+      const searchWords = req.query.search.trim().split(/\s+/);
+      where[Op.and] = searchWords.map(word => ({
+        [Op.or]: [
+          { title: { [Op.like]: `%${word}%` } },
+          { location: { [Op.like]: `%${word}%` } },
+          { status: { [Op.like]: `%${word}%` } },
+          { description: { [Op.like]: `%${word}%` } }
+        ]
+      }));
     }
 
     const { count, rows: exhibitions } = await Exhibition.findAndCountAll({
@@ -268,7 +284,12 @@ exports.updateExhibition = async (req, res) => {
       }
     }
 
-    await exhibition.update(req.body);
+    // При редактировании выставки игнорирую переданное значение remaining_tickets
+    const updateData = { ...req.body };
+    if (updateData.total_tickets !== undefined) {
+      updateData.remaining_tickets = updateData.total_tickets;
+    }
+    await exhibition.update(updateData);
 
     const updatedExhibition = await Exhibition.findByPk(req.params.id, {
       include: [{ 
@@ -303,56 +324,10 @@ exports.updateExhibition = async (req, res) => {
 
 // Обновление статуса выставки
 exports.updateExhibitionStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-    const validStatuses = ['planned', 'active', 'completed'];
-    
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Некорректный статус выставки. Допустимые значения: planned, active, completed'
-      });
-    }
-
-    const exhibition = await Exhibition.findByPk(req.params.id, {
-      include: [{ model: Ticket }]
-    });
-    
-    if (!exhibition) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Выставка с указанным ID не найдена'
-      });
-    }
-
-    if (status === 'completed' && new Date(exhibition.end_date) > new Date()) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Нельзя завершить выставку до даты окончания'
-      });
-    }
-
-    await exhibition.update({ status });
-
-    const updatedExhibition = await Exhibition.findByPk(req.params.id, {
-      include: [{ 
-        model: Artwork,
-        attributes: ['id', 'title', 'creation_year', 'image_path']
-      }]
-    });
-
-    res.status(200).json({
-      status: 'success',
-      data: { 
-        exhibition: updatedExhibition
-      }
-    });
-  } catch(err) {
-    res.status(500).json({
-      status: 'error',
-      message: 'Ошибка при обновлении статуса выставки: ' + err.message
-    });
-  }
+  return res.status(400).json({
+    status: 'error',
+    message: 'Статус выставки определяется автоматически по датам начала и окончания. Ручное изменение невозможно.'
+  });
 };
 
 // Удаление выставки по ID

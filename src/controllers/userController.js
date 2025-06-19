@@ -42,14 +42,17 @@ exports.getAllUsers = async (req, res) => {
   try {
     const where = {};
 
-    if(req.query.name) {
-      where[Op.or] = [
-        {email : { [Op.like]: `%${req.query.email}%` }},
-        { surname: { [Op.like]: `%${req.query.name}%` } },
-        { first_name: { [Op.like]: `%${req.query.name}%` } },
-        { patronymic: { [Op.like]: `%${req.query.name}%` } },
-        { role : { [Op.like]: `%${req.query.name}%` }}
-      ];
+    if (req.query.name) {
+      const searchWords = req.query.name.trim().split(/\s+/);
+      where[Op.and] = searchWords.map(word => ({
+        [Op.or]: [
+          { surname: { [Op.like]: `%${word}%` } },
+          { first_name: { [Op.like]: `%${word}%` } },
+          { patronymic: { [Op.like]: `%${word}%` } },
+          { email: { [Op.like]: `%${word}%` } },
+          { role: { [Op.like]: `%${word}%` } }
+        ]
+      }));
     }
 
     const users = await User.findAll({

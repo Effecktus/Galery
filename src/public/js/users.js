@@ -344,7 +344,16 @@ function editUser(id, surname, first_name, patronymic, email, role) {
 
 // Функция обновления пользователя
 function updateUser(id, surname, first_name, patronymic, email, password, role) {
-  const data = { surname, first_name, patronymic, email, role };
+  // Преобразуем пустую строку в null для отчества
+  const patronymicValue = patronymic.trim() === '' ? null : patronymic;
+  
+  const data = { 
+    surname, 
+    first_name, 
+    patronymic: patronymicValue, 
+    email, 
+    role 
+  };
   if (password) {
     data.password = password;
   }

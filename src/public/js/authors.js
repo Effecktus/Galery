@@ -88,7 +88,7 @@ $(document).ready(function () {
 // Функция загрузки авторов
 function loadAuthors(searchTerm = "") {
   $.ajax({
-    url: `/api/v1/authors${searchTerm ? `?name=${searchTerm}` : ""}`,
+    url: `/api/v1/authors${searchTerm ? `?name=${encodeURIComponent(searchTerm.trim())}` : ""}`,
     method: 'GET',
     success: function(response) {
       if (response.status === "success") {
@@ -114,8 +114,8 @@ function loadAuthors(searchTerm = "") {
               valueB = b.first_name.toLowerCase();
               break;
             case 'patronymic':
-              valueA = a.patronymic.toLowerCase();
-              valueB = b.patronymic.toLowerCase();
+              valueA = (a.patronymic || '').toLowerCase();
+              valueB = (b.patronymic || '').toLowerCase();
               break;
             case 'date_of_birth':
               valueA = a.date_of_birth;
@@ -148,13 +148,13 @@ function loadAuthors(searchTerm = "") {
               <td>${author.id}</td>
               <td>${author.surname}</td>
               <td>${author.first_name}</td>
-              <td>${author.patronymic}</td>
+              <td>${author.patronymic || ''}</td>
               <td>${formatDate(author.date_of_birth)}</td>
               <td>${formatDate(author.date_of_death)}</td>
               <td>${author.statistics.total_artworks}</td>
               <td>
                 <button class="btn btn-sm btn-primary me-2" onclick="editAuthor(${author.id}, 
-                  '${author.surname}', '${author.first_name}', '${author.patronymic}', 
+                  '${author.surname}', '${author.first_name}', '${author.patronymic || ''}', 
                   '${author.date_of_birth}', '${author.date_of_death}')">
                   <i class="fas fa-edit"></i>Изменить
                 </button>
@@ -228,11 +228,20 @@ function editAuthor(id, surname, first_name, patronymic, date_of_birth, date_of_
 
 // Функция обновления автора
 function updateAuthor(id, surname, first_name, patronymic, date_of_birth, date_of_death) {
+  // Преобразуем пустую строку в null для отчества
+  const patronymicValue = patronymic.trim() === '' ? null : patronymic;
+  
   $.ajax({
     url: `/api/v1/authors/${id}`,
     method: 'PATCH',
     contentType: 'application/json',
-    data: JSON.stringify({ surname, first_name, patronymic, date_of_birth, date_of_death }),
+    data: JSON.stringify({ 
+      surname, 
+      first_name, 
+      patronymic: patronymicValue, 
+      date_of_birth, 
+      date_of_death 
+    }),
     success: function(response) {
       if (response.status === "success") {
         $('#editAuthorModal').removeClass('active');

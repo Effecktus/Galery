@@ -56,6 +56,7 @@ $(document).ready(function () {
       end_date: $('#exhibitionEndDate').val(),
       status: $('#exhibitionStatus').val(),
       ticket_price: parseFloat($('#exhibitionTicketPrice').val()),
+      total_tickets: parseInt($('#exhibitionTotalTickets').val()),
       description: $('#exhibitionDescription').val().trim(),
       artwork_ids: Array.from($('#exhibitionArtworks').val()).map(Number)
     };
@@ -79,6 +80,7 @@ $(document).ready(function () {
       end_date: $('#editExhibitionEndDate').val(),
       status: $('#editExhibitionStatus').val(),
       ticket_price: parseFloat($('#editExhibitionTicketPrice').val()),
+      total_tickets: parseInt($('#editExhibitionTotalTickets').val()),
       description: $('#editExhibitionDescription').val().trim(),
       artwork_ids: Array.from($('#editExhibitionArtworks').val()).map(Number)
     };
@@ -227,7 +229,8 @@ function addExhibition(formData) {
   $.ajax({
     url: '/api/v1/exhibitions',
     method: 'POST',
-    data: formData,
+    contentType: 'application/json',
+    data: JSON.stringify(formData),
     success: function(response) {
       if (response.status === "success") {
         $('#addExhibitionModal').removeClass('active');
@@ -271,6 +274,7 @@ function editExhibition(id) {
         $('#editExhibitionStatus').val(exhibition.status);
         $('#editExhibitionTicketPrice').val(exhibition.ticket_price);
         $('#editExhibitionDescription').val(exhibition.description);
+        $('#editExhibitionTotalTickets').val(exhibition.total_tickets);
         
         // Устанавливаем выбранные произведения
         const selectedArtworkIds = exhibition.Artworks.map(artwork => artwork.id);
@@ -294,7 +298,8 @@ function updateExhibition(id, formData) {
   $.ajax({
     url: `/api/v1/exhibitions/${id}`,
     method: 'PATCH',
-    data: formData,
+    contentType: 'application/json',
+    data: JSON.stringify(formData),
     success: function(response) {
       if (response.status === "success") {
         $('#editExhibitionModal').removeClass('active');
@@ -371,8 +376,8 @@ function formatDateForInput(dateString) {
 
 function formatStatus(status) {
   const statusMap = {
-    'planned': 'Запланирована',
-    'active': 'Активна',
+    'upcoming': 'Запланирована',
+    'active': 'Идёт',
     'completed': 'Завершена'
   };
   return statusMap[status] || status;
@@ -458,6 +463,7 @@ function validateAddExhibitionForm() {
   const end_date = $('#exhibitionEndDate').val();
   const status = $('#exhibitionStatus').val();
   const ticket_price = $('#exhibitionTicketPrice').val();
+  const total_tickets = $('#exhibitionTotalTickets').val();
   const description = $('#exhibitionDescription').val().trim();
   const artwork_ids = $('#exhibitionArtworks').val();
 
@@ -487,7 +493,7 @@ function validateAddExhibitionForm() {
 
   if (!status) {
     errors.push({ field: 'exhibitionStatus', message: 'Статус обязателен' });
-  } else if (!['planned', 'active', 'completed'].includes(status)) {
+  } else if (!['upcoming', 'active', 'completed'].includes(status)) {
     errors.push({ field: 'exhibitionStatus', message: 'Неверный статус выставки' });
   }
 
@@ -498,6 +504,12 @@ function validateAddExhibitionForm() {
     if (isNaN(price) || price < 0) {
       errors.push({ field: 'exhibitionTicketPrice', message: 'Цена билета должна быть положительным числом' });
     }
+  }
+
+  if (!total_tickets) {
+    errors.push({ field: 'exhibitionTotalTickets', message: 'Общее количество билетов обязательно' });
+  } else if (isNaN(parseInt(total_tickets)) || parseInt(total_tickets) < 1) {
+    errors.push({ field: 'exhibitionTotalTickets', message: 'Общее количество билетов должно быть положительным числом' });
   }
 
   if (description && description.length > 2000) {
@@ -519,6 +531,7 @@ function validateEditExhibitionForm() {
   const end_date = $('#editExhibitionEndDate').val();
   const status = $('#editExhibitionStatus').val();
   const ticket_price = $('#editExhibitionTicketPrice').val();
+  const total_tickets = $('#editExhibitionTotalTickets').val();
   const description = $('#editExhibitionDescription').val().trim();
   const artwork_ids = $('#editExhibitionArtworks').val();
 
@@ -548,7 +561,7 @@ function validateEditExhibitionForm() {
 
   if (!status) {
     errors.push({ field: 'editExhibitionStatus', message: 'Статус обязателен' });
-  } else if (!['planned', 'active', 'completed'].includes(status)) {
+  } else if (!['upcoming', 'active', 'completed'].includes(status)) {
     errors.push({ field: 'editExhibitionStatus', message: 'Неверный статус выставки' });
   }
 
@@ -559,6 +572,12 @@ function validateEditExhibitionForm() {
     if (isNaN(price) || price < 0) {
       errors.push({ field: 'editExhibitionTicketPrice', message: 'Цена билета должна быть положительным числом' });
     }
+  }
+
+  if (!total_tickets) {
+    errors.push({ field: 'editExhibitionTotalTickets', message: 'Общее количество билетов обязательно' });
+  } else if (isNaN(parseInt(total_tickets)) || parseInt(total_tickets) < 1) {
+    errors.push({ field: 'editExhibitionTotalTickets', message: 'Общее количество билетов должно быть положительным числом' });
   }
 
   if (description && description.length > 2000) {

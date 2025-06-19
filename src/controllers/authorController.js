@@ -34,11 +34,17 @@ exports.getAllAuthors = async (req, res) => {
   try {
     const where = {};
     if (req.query.name) {
-      where[Op.or] = [
-        { surname: { [Op.like]: `%${req.query.name}%` } },
-        { first_name: { [Op.like]: `%${req.query.name}%` } },
-        { patronymic: { [Op.like]: `%${req.query.name}%` } }
-      ];
+      const searchTerms = req.query.name.toLowerCase().split(' ').filter(term => term.length > 0);
+      
+      if (searchTerms.length > 0) {
+        where[Op.and] = searchTerms.map(term => ({
+          [Op.or]: [
+            { surname: { [Op.like]: `%${term}%` } },
+            { first_name: { [Op.like]: `%${term}%` } },
+            { patronymic: { [Op.like]: `%${term}%` } }
+          ]
+        }));
+      }
     }
 
     const authors = await Author.findAll({

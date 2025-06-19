@@ -85,59 +85,51 @@ exports.createArtwork = async (req, res) => {
 // Получение всех произведений искусства
 exports.getAllArtworks = async (req, res) => {
   try {
-    // Базовые условия фильтрации
     const where = {};
-    
-    // Фильтрация по названию произведения
-    if (req.query.search) {
-      where.title = { [Op.like]: `%${req.query.search}%` };
-    }
-
-    // Фильтрация по году создания
-    if (req.query.search) {
-      const year = parseInt(req.query.search, 10);
-      if (!isNaN(year)) {
-        where.creation_year = year;
-      }
-    }
-
-    // Настройка включения связанных моделей с условиями фильтрации
     const include = [
       { 
         model: Author,
         attributes: ['id', 'surname', 'first_name', 'patronymic'],
-        where: req.query.search ? {
-          [Op.or]: [
-            { surname: { [Op.like]: `%${req.query.search}%` } },
-            { first_name: { [Op.like]: `%${req.query.search}%` } },
-            { patronymic: { [Op.like]: `%${req.query.search}%` } }
-          ]
-        } : undefined,
         required: false
       },
       { 
         model: Style,
         attributes: ['id', 'name'],
-        where: req.query.search ? {
-          name: { [Op.like]: `%${req.query.search}%` }
-        } : undefined,
         required: false
       },
       { 
         model: Genre,
         attributes: ['id', 'name'],
-        where: req.query.search ? {
-          name: { [Op.like]: `%${req.query.search}%` }
-        } : undefined,
         required: false
       },
       { 
         model: Exhibition,
         attributes: ['id'],
-        through: { attributes: [] }, // Исключаем атрибуты промежуточной таблицы
+        through: { attributes: [] },
         required: false
       }
     ];
+
+    if (req.query.search) {
+      const searchTerms = req.query.search.toLowerCase().split(' ').filter(term => term.length > 0);
+      
+      if (searchTerms.length > 0) {
+        where[Op.and] = searchTerms.map(term => ({
+          [Op.or]: [
+            { title: { [Op.like]: `%${term}%` } },
+            { description: { [Op.like]: `%${term}%` } },
+            { creation_year: { [Op.like]: `%${term}%` } },
+            { width: { [Op.like]: `%${term}%` } },
+            { height: { [Op.like]: `%${term}%` } },
+            { '$Author.surname$': { [Op.like]: `%${term}%` } },
+            { '$Author.first_name$': { [Op.like]: `%${term}%` } },
+            { '$Author.patronymic$': { [Op.like]: `%${term}%` } },
+            { '$Style.name$': { [Op.like]: `%${term}%` } },
+            { '$Genre.name$': { [Op.like]: `%${term}%` } }
+          ]
+        }));
+      }
+    }
 
     const artworks = await Artwork.findAll({
       where,

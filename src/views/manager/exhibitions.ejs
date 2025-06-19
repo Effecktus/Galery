@@ -125,8 +125,8 @@
         <div class="form-group">
           <label for="exhibitionStatus">Статус</label>
           <select id="exhibitionStatus" required>
-            <option value="planned">Запланирована</option>
-            <option value="active">Активна</option>
+            <option value="upcoming">Запланирована</option>
+            <option value="active">Идёт</option>
             <option value="completed">Завершена</option>
           </select>
           <div class="error-message" id="exhibitionStatusError"></div>
@@ -141,6 +141,11 @@
             required
           />
           <div class="error-message" id="exhibitionTicketPriceError"></div>
+        </div>
+        <div class="form-group">
+          <label for="exhibitionTotalTickets">Общее количество билетов</label>
+          <input type="number" id="exhibitionTotalTickets" min="1" required />
+          <div class="error-message" id="exhibitionTotalTicketsError"></div>
         </div>
         <div class="form-group">
           <label for="exhibitionDescription">Описание</label>
@@ -211,8 +216,8 @@
         <div class="form-group">
           <label for="editExhibitionStatus">Статус</label>
           <select id="editExhibitionStatus" required>
-            <option value="planned">Запланирована</option>
-            <option value="active">Активна</option>
+            <option value="upcoming">Запланирована</option>
+            <option value="active">Идёт</option>
             <option value="completed">Завершена</option>
           </select>
           <div class="error-message" id="editExhibitionStatusError"></div>
@@ -227,6 +232,18 @@
             required
           />
           <div class="error-message" id="editExhibitionTicketPriceError"></div>
+        </div>
+        <div class="form-group">
+          <label for="editExhibitionTotalTickets"
+            >Общее количество билетов</label
+          >
+          <input
+            type="number"
+            id="editExhibitionTotalTickets"
+            min="1"
+            required
+          />
+          <div class="error-message" id="editExhibitionTotalTicketsError"></div>
         </div>
         <div class="form-group">
           <label for="editExhibitionDescription">Описание</label>

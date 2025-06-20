@@ -7,6 +7,26 @@ const filterSensitiveData = (user) => {
   return userWithoutSensitiveData;
 };
 
+// Утилита для замены null в patronymic на пустую строку
+const normalizePatronymic = (obj) => {
+  if (!obj) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(normalizePatronymic);
+  }
+  if (typeof obj === 'object') {
+    if ('patronymic' in obj && obj.patronymic === null) {
+      obj.patronymic = '';
+    }
+    // Рекурсивно для вложенных объектов (например, Tickets)
+    for (const key in obj) {
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        obj[key] = normalizePatronymic(obj[key]);
+      }
+    }
+  }
+  return obj;
+};
+
 // Создание нового пользователя (админская операция)
 exports.createUser = async (req, res) => {
   try {
@@ -16,7 +36,7 @@ exports.createUser = async (req, res) => {
       status: 'success',
       message: 'Пользователь успешно создан',
       data: {
-        user: filterSensitiveData(newUser)
+        user: normalizePatronymic(filterSensitiveData(newUser))
       }
     });
   } catch (err) {
@@ -68,7 +88,7 @@ exports.getAllUsers = async (req, res) => {
     const usersWithStats = users.map(user => {
       const userData = filterSensitiveData(user);
       return {
-        ...userData,
+        ...normalizePatronymic(userData),
         statistics: {
           total_tickets: user.Tickets ? user.Tickets.length : 0
         }
@@ -111,7 +131,7 @@ exports.getUser = async (req, res) => {
     }
 
     const userWithStats = {
-      ...filterSensitiveData(user),
+      ...normalizePatronymic(filterSensitiveData(user)),
       statistics: {
         total_tickets: user.Tickets.reduce((sum, ticket) => sum + ticket.quantity, 0)
       }
@@ -175,7 +195,7 @@ exports.updateUser = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        user: filterSensitiveData(updatedUser)
+        user: normalizePatronymic(filterSensitiveData(updatedUser))
       }
     });
   } catch (err) {
@@ -286,7 +306,7 @@ exports.updateMe = async (req, res) => {
       status: 'success',
       message: 'Профиль успешно обновлен',
       data: {
-        user: filterSensitiveData(updatedUser)
+        user: normalizePatronymic(filterSensitiveData(updatedUser))
       }
     });
   } catch (err) {

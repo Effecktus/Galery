@@ -9,7 +9,7 @@ exports.createAuthor = async (req, res) => {
     res.status(201).json({
       status: 'success',
       message: 'Автор успешно создан',
-      data: { author: newAuthor }
+      data: { author: normalizePatronymic(newAuthor) }
     });
   } catch(err) {
     if (err instanceof ValidationError) {
@@ -59,7 +59,7 @@ exports.getAllAuthors = async (req, res) => {
 
     // Добавляем статистику по произведениям
     const authorsWithStats = authors.map(author => ({
-      ...author.toJSON(),
+      ...normalizePatronymic(author.toJSON()),
       statistics: {
         total_artworks: author.Artworks ? author.Artworks.length : 0
       }
@@ -109,7 +109,7 @@ exports.getAuthor = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        author
+        author: normalizePatronymic(author)
       }
     });
   } catch(err) {
@@ -158,7 +158,7 @@ exports.updateAuthor = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        author: updatedAuthor
+        author: normalizePatronymic(updatedAuthor)
       }
     });
   } catch(err) {
@@ -220,4 +220,24 @@ exports.deleteAuthor = async (req, res) => {
       message: 'Ошибка при удалении автора: ' + err.message
     });
   }
+};
+
+// Утилита для замены null в patronymic на пустую строку
+const normalizePatronymic = (obj) => {
+  if (!obj) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(normalizePatronymic);
+  }
+  if (typeof obj === 'object') {
+    if ('patronymic' in obj && obj.patronymic === null) {
+      obj.patronymic = '';
+    }
+    // Рекурсивно для вложенных объектов
+    for (const key in obj) {
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        obj[key] = normalizePatronymic(obj[key]);
+      }
+    }
+  }
+  return obj;
 };

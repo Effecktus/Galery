@@ -1,26 +1,30 @@
 // Предполагаемый код, адаптированный под изменения
 const { Ticket, Exhibition, User } = require('../models');
-const { Op } = require('sequelize');
+const { Op, ValidationError } = require('sequelize');
 
-const createTicket = async (req, res) => {
+// Создание билета
+exports.createTicket = async (req, res) => {
   try {
     const { exhibition_id, quantity } = req.body;
+    if (!exhibition_id || !quantity) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Необходимо указать выставку и количество билетов'
+      });
+    }
     const exhibition = await Exhibition.findByPk(exhibition_id);
-    
     if (!exhibition) {
       return res.status(404).json({
         status: 'error',
         message: 'Выставка не найдена'
       });
     }
-
     if (exhibition.remaining_tickets < quantity) {
       return res.status(400).json({
         status: 'error',
         message: 'Недостаточно билетов'
       });
     }
-
     const total_price = exhibition.ticket_price * quantity;
     const ticket = await Ticket.create({
       user_id: req.user.id,
@@ -29,143 +33,152 @@ const createTicket = async (req, res) => {
       booking_date: new Date(),
       total_price
     });
-
     await exhibition.update({
       remaining_tickets: exhibition.remaining_tickets - quantity
     });
-
     res.status(201).json({
       status: 'success',
       data: { ticket }
     });
   } catch (err) {
-    console.error('Create ticket error:', err);
+    if (err instanceof ValidationError) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Ошибка валидации данных',
+        errors: err.errors.map(e => ({
+          field: e.path,
+          message: e.message
+        }))
+      });
+    }
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при создании билета'
+      message: 'Ошибка при создании билета: ' + err.message
     });
   }
 };
 
-const getAllTickets = async (req, res) => {
+// Получение всех билетов
+exports.getAllTickets = async (req, res) => {
   try {
+    const where = {};
+    if (req.query.search) {
+      const searchWords = req.query.search.trim().split(/\s+/);
+      where[Op.and] = searchWords.map(word => ({
+        [Op.or]: [
+          { id: { [Op.like]: `%${word}%` } },
+          { user_id: { [Op.like]: `%${word}%` } },
+          { exhibition_id: { [Op.like]: `%${word}%` } },
+          { quantity: { [Op.like]: `%${word}%` } },
+          { total_price: { [Op.like]: `%${word}%` } },
+          { booking_date: { [Op.like]: `%${word}%` } },
+          { '$User.surname$': { [Op.like]: `%${word}%` } },
+          { '$User.first_name$': { [Op.like]: `%${word}%` } },
+          { '$User.patronymic$': { [Op.like]: `%${word}%` } },
+          { '$Exhibition.title$': { [Op.like]: `%${word}%` } }
+        ]
+      }));
+    }
     const tickets = await Ticket.findAll({
+      where,
       include: [
-        { model: User, attributes: ['id', 'surname', 'first_name'] },
-        { model: Exhibition, attributes: ['id', 'title'] }
+        { model: User, attributes: ['id', 'surname', 'first_name', 'patronymic'], required: false },
+        { model: Exhibition, attributes: ['id', 'title'], required: false }
       ]
     });
-    
     res.status(200).json({
       status: 'success',
       data: { tickets }
     });
   } catch (err) {
-    console.error('Get all tickets error:', err);
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при получении билетов'
+      message: 'Ошибка при получении билетов: ' + err.message
     });
   }
 };
 
-const getMyTickets = async (req, res) => {
+// Получение билетов текущего пользователя
+exports.getMyTickets = async (req, res) => {
   try {
     const tickets = await Ticket.findAll({
       where: { user_id: req.user.id },
       include: [{ model: Exhibition, attributes: ['id', 'title', 'start_date', 'end_date'] }]
     });
-    
     res.status(200).json({
       status: 'success',
       data: { tickets }
     });
   } catch (err) {
-    console.error('Get my tickets error:', err);
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при получении билетов'
+      message: 'Ошибка при получении билетов: ' + err.message
     });
   }
 };
 
-const getTicket = async (req, res) => {
+// Получение билета по ID
+exports.getTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findByPk(req.params.id, {
       include: [{ model: Exhibition, attributes: ['id', 'title', 'start_date', 'end_date'] }]
     });
-    
     if (!ticket) {
       return res.status(404).json({
         status: 'error',
         message: 'Билет не найден'
       });
     }
-
     if (req.user.role !== 'admin' && ticket.user_id !== req.user.id) {
       return res.status(403).json({
         status: 'error',
         message: 'Доступ запрещён'
       });
     }
-
     res.status(200).json({
       status: 'success',
       data: { ticket }
     });
   } catch (err) {
-    console.error('Get ticket error:', err);
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при получении билета'
+      message: 'Ошибка при получении билета: ' + err.message
     });
   }
 };
 
-const cancelTicket = async (req, res) => {
+// Отмена (удаление) билета
+exports.cancelTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findByPk(req.params.id);
-    
     if (!ticket) {
       return res.status(404).json({
         status: 'error',
         message: 'Билет не найден'
       });
     }
-
     if (ticket.user_id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         status: 'error',
         message: 'Доступ запрещён'
       });
     }
-
     const exhibition = await Exhibition.findByPk(ticket.exhibition_id);
     if (exhibition) {
       await exhibition.update({
         remaining_tickets: exhibition.remaining_tickets + ticket.quantity
       });
     }
-
     await ticket.destroy();
-    
     res.status(200).json({
       status: 'success',
-      message: 'Билет успешно отменён'
+      message: 'Билет успешно отменён',
+      data: null
     });
   } catch (err) {
-    console.error('Cancel ticket error:', err);
     res.status(500).json({
       status: 'error',
-      message: 'Ошибка при отмене билета'
+      message: 'Ошибка при отмене билета: ' + err.message
     });
   }
-};
-
-module.exports = {
-  createTicket,
-  getAllTickets,
-  getMyTickets,
-  getTicket,
-  cancelTicket
 };

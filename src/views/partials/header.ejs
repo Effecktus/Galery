@@ -1,6 +1,10 @@
 <header class="site-header">
   <div class="header-container">
-    <a class="site-logo" href="/">Художественная галерея</a>
+    <a
+      class="site-logo"
+      href="<% if (locals.user && user.role === 'admin') { %>/admin<% } else { %>/<% } %>"
+      >Художественная галерея</a
+    >
     <button class="menu-toggle" type="button" aria-label="Toggle navigation">
       <span class="menu-icon"></span>
     </button>
@@ -16,11 +20,7 @@
         <% } %>
       </ul>
       <ul class="nav-list">
-        <% if (locals.user) { %> <% if (user.role === 'admin') { %>
-        <li class="nav-item">
-          <a class="nav-link" href="/admin">Панель администратора</a>
-        </li>
-        <% } else if (user.role === 'manager') { %>
+        <% if (locals.user) { %> <% if (user.role === 'manager') { %>
         <li class="nav-item">
           <a class="nav-link" href="/manager">Панель менеджера</a>
         </li>

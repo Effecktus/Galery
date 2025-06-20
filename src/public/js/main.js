@@ -34,6 +34,12 @@ function formatPrice(price) {
     }).format(price);
 }
 
+// Функция для форматирования времени без секунд
+function formatTime(timeString) {
+  if (!timeString) return '';
+  return timeString.slice(0,5);
+}
+
 // Инициализация при загрузке страницы
 $(document).ready(function() {
     // Обработка AJAX форм

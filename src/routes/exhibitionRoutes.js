@@ -10,13 +10,12 @@ const logRequest = (req, res, next) => {
   next();
 };
 
-router.use(logRequest);
-
 router.get('/', exhibitionController.getAllExhibitions);
 router.get('/:id', validateExhibitionId, validate, exhibitionController.getExhibition);
 
 router.use(auth.protect);
 router.use(auth.restrictTo('admin', 'manager'));
+router.use(logRequest);
 
 router.post('/', validateExhibition, validate, exhibitionController.createExhibition);
 router.patch('/:id', validateExhibitionId, validateExhibitionUpdate, validate, exhibitionController.updateExhibition);

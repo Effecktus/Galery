@@ -10,12 +10,12 @@ const logRequest = (req, res, next) => {
   next();
 };
 
-router.use(logRequest);
 router.use(auth.protect);
+router.use(auth.restrictTo('admin'));
+router.use(logRequest);
 
 router.patch('/me', validateUserUpdate, validate, userController.updateMe);
-
-router.use(auth.restrictTo('admin'));
+router.get('/me', userController.getMe);
 
 router.post('/', validateCreateUser, validate, userController.createUser);
 router.get('/', userController.getAllUsers);

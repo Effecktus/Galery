@@ -1,0 +1,112 @@
+<div class="content-container">
+  <div class="profile-container">
+    <h1>Профиль пользователя</h1>
+    <div class="profile-info">
+      <div>
+        <strong>Фамилия:</strong>
+        <span id="profileSurname"><%= user.surname %></span>
+      </div>
+      <div>
+        <strong>Имя:</strong>
+        <span id="profileFirstName"><%= user.first_name %></span>
+      </div>
+      <div>
+        <strong>Отчество:</strong>
+        <span id="profilePatronymic"><%= user.patronymic %></span>
+      </div>
+      <div>
+        <strong>Email:</strong> <span id="profileEmail"><%= user.email %></span>
+      </div>
+      <div>
+        <strong>Роль:</strong> <span id="profileRole"><%= user.role %></span>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="editProfileBtn">Редактировать</button>
+  </div>
+</div>
+
+<!-- Модальное окно редактирования профиля -->
+<div class="modal" id="editProfileModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Редактировать профиль</h5>
+      <button type="button" class="modal-close" aria-label="Close">
+        &times;
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="editProfileForm">
+        <div class="form-group">
+          <label for="editProfileSurname">Фамилия</label>
+          <input type="text" id="editProfileSurname" required />
+          <div class="error-message" id="editProfileSurnameError"></div>
+        </div>
+        <div class="form-group">
+          <label for="editProfileFirstName">Имя</label>
+          <input type="text" id="editProfileFirstName" required />
+          <div class="error-message" id="editProfileFirstNameError"></div>
+        </div>
+        <div class="form-group">
+          <label for="editProfilePatronymic">Отчество</label>
+          <input type="text" id="editProfilePatronymic" />
+          <div class="error-message" id="editProfilePatronymicError"></div>
+        </div>
+        <div class="form-group">
+          <label for="editProfileEmail">Email</label>
+          <input type="email" id="editProfileEmail" required />
+          <div class="error-message" id="editProfileEmailError"></div>
+        </div>
+        <div class="form-group">
+          <label for="editProfilePassword">Новый пароль</label>
+          <div class="password-wrapper">
+            <input type="password" id="editProfilePassword" />
+            <span class="toggle-password" data-target="editProfilePassword"
+              ><i class="fas fa-eye"></i
+            ></span>
+          </div>
+          <small class="form-text text-muted"
+            >Оставьте пустым, чтобы не менять пароль</small
+          >
+          <div class="error-message" id="editProfilePasswordError"></div>
+        </div>
+        <div class="form-group">
+          <label for="editProfilePasswordConfirm">Подтверждение пароля</label>
+          <div class="password-wrapper">
+            <input type="password" id="editProfilePasswordConfirm" />
+            <span
+              class="toggle-password"
+              data-target="editProfilePasswordConfirm"
+              ><i class="fas fa-eye"></i
+            ></span>
+          </div>
+          <div class="error-message" id="editProfilePasswordConfirmError"></div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-close">
+        Отмена
+      </button>
+      <button type="button" class="btn btn-primary" id="saveProfileBtn">
+        Сохранить
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/profile.js"></script>
+<script>
+  // Показывать/скрывать пароль
+  document.querySelectorAll(".toggle-password").forEach(function (el) {
+    el.addEventListener("click", function () {
+      const target = document.getElementById(el.getAttribute("data-target"));
+      if (target.type === "password") {
+        target.type = "text";
+        el.innerHTML = '<i class="fas fa-eye-slash"></i>';
+      } else {
+        target.type = "password";
+        el.innerHTML = '<i class="fas fa-eye"></i>';
+      }
+    });
+  });
+</script>

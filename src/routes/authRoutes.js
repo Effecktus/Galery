@@ -10,13 +10,12 @@ const logRequest = (req, res, next) => {
   next();
 };
 
-router.use(logRequest);
-
 router.post('/register', validateRegister, validate, authController.register);
 router.post('/login', validateLogin, validate, authController.login);
 router.post('/refresh-token', authController.refreshToken);
 
 router.use(auth.protect);
+router.use(logRequest);
 
 router.delete('/logout', authController.logout);
 router.patch('/change-password', validatePasswordChange, validate, authController.changePassword);

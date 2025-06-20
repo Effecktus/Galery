@@ -209,6 +209,7 @@ function validateAddUserForm() {
   const patronymic = $('#userPatronymic').val().trim();
   const email = $('#userEmail').val().trim();
   const password = $('#userPassword').val();
+  const passwordConfirm = $('#userPasswordConfirm').val();
   const role = $('#userRole').val();
 
   const errors = [];
@@ -241,6 +242,12 @@ function validateAddUserForm() {
     errors.push({ field: 'userPassword', message: 'Пароль должен быть не менее 8 символов' });
   }
 
+  if (!passwordConfirm) {
+    errors.push({ field: 'userPasswordConfirm', message: 'Подтверждение пароля обязательно' });
+  } else if (password !== passwordConfirm) {
+    errors.push({ field: 'userPasswordConfirm', message: 'Пароли не совпадают' });
+  }
+
   if (!role) {
     errors.push({ field: 'userRole', message: 'Роль обязательна' });
   }
@@ -255,6 +262,7 @@ function validateEditUserForm() {
   const patronymic = $('#editUserPatronymic').val().trim();
   const email = $('#editUserEmail').val().trim();
   const password = $('#editUserPassword').val();
+  const passwordConfirm = $('#editUserPasswordConfirm').val();
   const role = $('#editUserRole').val();
 
   const errors = [];
@@ -281,8 +289,15 @@ function validateEditUserForm() {
     errors.push({ field: 'editUserEmail', message: 'Неверный формат email' });
   }
 
-  if (password && password.length < 8) {
-    errors.push({ field: 'editUserPassword', message: 'Пароль должен быть не менее 8 символов' });
+  if (password) {
+    if (password.length < 8) {
+      errors.push({ field: 'editUserPassword', message: 'Пароль должен быть не менее 8 символов' });
+    }
+    if (!passwordConfirm) {
+      errors.push({ field: 'editUserPasswordConfirm', message: 'Подтверждение пароля обязательно' });
+    } else if (password !== passwordConfirm) {
+      errors.push({ field: 'editUserPasswordConfirm', message: 'Пароли не совпадают' });
+    }
   }
 
   if (!role) {

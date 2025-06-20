@@ -235,6 +235,17 @@ app.get('/admin/tickets', (req, res) => {
     });
 });
 
+// Страница профиля
+app.get('/profile', (req, res) => {
+    if (!res.locals.user) {
+        return res.redirect('/auth/login');
+    }
+    res.render('profile', {
+        title: 'Профиль',
+        user: res.locals.user
+    });
+});
+
 // Обработка 404 ошибок
 app.use((req, res) => {
     res.status(404).render('error', {

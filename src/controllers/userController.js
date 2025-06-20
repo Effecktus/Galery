@@ -30,6 +30,8 @@ const normalizePatronymic = (obj) => {
 // Создание нового пользователя (админская операция)
 exports.createUser = async (req, res) => {
   try {
+    // Преобразуем пустую строку patronymic в null
+    if (req.body.patronymic === '') req.body.patronymic = null;
     const newUser = await User.create(req.body);
 
     res.status(201).json({
@@ -181,6 +183,9 @@ exports.updateUser = async (req, res) => {
       }
     }
 
+    // Преобразуем пустую строку patronymic в null
+    if (req.body.patronymic === '') req.body.patronymic = null;
+
     // Обновляем пользователя
     await user.update(req.body);
 
@@ -323,6 +328,30 @@ exports.updateMe = async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Ошибка при обновлении профиля'
+    });
+  }
+};
+
+// Получение профиля текущего пользователя
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Пользователь не найден'
+      });
+    }
+    res.status(200).json({
+      status: 'success',
+      data: {
+        user: normalizePatronymic(filterSensitiveData(user))
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Ошибка при получении профиля'
     });
   }
 };

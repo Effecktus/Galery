@@ -25,6 +25,16 @@ module.exports = (sequelize) => {
       type: DataTypes.DATE,
       allowNull: false
     },
+    opening_time: {
+      type: DataTypes.TIME,
+      allowNull: false,
+      defaultValue: '10:00:00'
+    },
+    closing_time: {
+      type: DataTypes.TIME,
+      allowNull: false,
+      defaultValue: '18:00:00'
+    },
     ticket_price: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
@@ -56,11 +66,17 @@ module.exports = (sequelize) => {
     hooks: {
       beforeSave: async (exhibition) => {
         const now = new Date();
-        if (exhibition.start_date > now) {
+        const startDateTime = new Date(
+          exhibition.start_date.toISOString().slice(0, 10) + 'T' + (exhibition.opening_time || '10:00:00')
+        );
+        const endDateTime = new Date(
+          exhibition.end_date.toISOString().slice(0, 10) + 'T' + (exhibition.closing_time || '18:00:00')
+        );
+        if (now < startDateTime) {
           exhibition.status = 'upcoming';
-        } else if (exhibition.start_date <= now && exhibition.end_date > now) {
+        } else if (now >= startDateTime && now <= endDateTime) {
           exhibition.status = 'active';
-        } else if (exhibition.end_date <= now) {
+        } else if (now > endDateTime) {
           exhibition.status = 'completed';
         }
       }

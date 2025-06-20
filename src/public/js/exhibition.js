@@ -54,6 +54,8 @@ $(document).ready(function () {
       location: $('#exhibitionLocation').val().trim(),
       start_date: $('#exhibitionStartDate').val(),
       end_date: $('#exhibitionEndDate').val(),
+      opening_time: $('#exhibitionOpeningTime').val(),
+      closing_time: $('#exhibitionClosingTime').val(),
       status: $('#exhibitionStatus').val(),
       ticket_price: parseFloat($('#exhibitionTicketPrice').val()),
       total_tickets: parseInt($('#exhibitionTotalTickets').val()),
@@ -78,6 +80,8 @@ $(document).ready(function () {
       location: $('#editExhibitionLocation').val().trim(),
       start_date: $('#editExhibitionStartDate').val(),
       end_date: $('#editExhibitionEndDate').val(),
+      opening_time: $('#editExhibitionOpeningTime').val(),
+      closing_time: $('#editExhibitionClosingTime').val(),
       status: $('#editExhibitionStatus').val(),
       ticket_price: parseFloat($('#editExhibitionTicketPrice').val()),
       total_tickets: parseInt($('#editExhibitionTotalTickets').val()),
@@ -271,6 +275,8 @@ function editExhibition(id) {
         $('#editExhibitionLocation').val(exhibition.location);
         $('#editExhibitionStartDate').val(formatDateForInput(exhibition.start_date));
         $('#editExhibitionEndDate').val(formatDateForInput(exhibition.end_date));
+        $('#editExhibitionOpeningTime').val(exhibition.opening_time ? exhibition.opening_time.slice(0,5) : '10:00');
+        $('#editExhibitionClosingTime').val(exhibition.closing_time ? exhibition.closing_time.slice(0,5) : '18:00');
         $('#editExhibitionStatus').val(exhibition.status);
         $('#editExhibitionTicketPrice').val(exhibition.ticket_price);
         $('#editExhibitionDescription').val(exhibition.description);
@@ -398,6 +404,7 @@ function showExhibitionDetails(id) {
         $('#detailLocation').text(exhibition.location);
         $('#detailStartDate').text(formatDate(exhibition.start_date));
         $('#detailEndDate').text(formatDate(exhibition.end_date));
+        $('#detailWorkingHours').text(`${formatTime(exhibition.opening_time)} - ${formatTime(exhibition.closing_time)}`);
         $('#detailStatus').text(formatStatus(exhibition.status));
         $('#detailTicketPrice').text(`${exhibition.ticket_price} ₽`);
         $('#detailDescription').text(exhibition.description || 'Нет описания');
@@ -461,6 +468,8 @@ function validateAddExhibitionForm() {
   const location = $('#exhibitionLocation').val().trim();
   const start_date = $('#exhibitionStartDate').val();
   const end_date = $('#exhibitionEndDate').val();
+  const opening_time = $('#exhibitionOpeningTime').val();
+  const closing_time = $('#exhibitionClosingTime').val();
   const status = $('#exhibitionStatus').val();
   const ticket_price = $('#exhibitionTicketPrice').val();
   const total_tickets = $('#exhibitionTotalTickets').val();
@@ -489,6 +498,18 @@ function validateAddExhibitionForm() {
     errors.push({ field: 'exhibitionEndDate', message: 'Дата окончания обязательна' });
   } else if (start_date && new Date(end_date) <= new Date(start_date)) {
     errors.push({ field: 'exhibitionEndDate', message: 'Дата окончания должна быть позже даты начала' });
+  }
+
+  if (!opening_time) {
+    errors.push({ field: 'exhibitionOpeningTime', message: 'Время открытия обязательно' });
+  }
+
+  if (!closing_time) {
+    errors.push({ field: 'exhibitionClosingTime', message: 'Время закрытия обязательно' });
+  }
+
+  if (opening_time && closing_time && opening_time >= closing_time) {
+    errors.push({ field: 'exhibitionClosingTime', message: 'Время закрытия должно быть позже времени открытия' });
   }
 
   if (!status) {
@@ -529,6 +550,8 @@ function validateEditExhibitionForm() {
   const location = $('#editExhibitionLocation').val().trim();
   const start_date = $('#editExhibitionStartDate').val();
   const end_date = $('#editExhibitionEndDate').val();
+  const opening_time = $('#editExhibitionOpeningTime').val();
+  const closing_time = $('#editExhibitionClosingTime').val();
   const status = $('#editExhibitionStatus').val();
   const ticket_price = $('#editExhibitionTicketPrice').val();
   const total_tickets = $('#editExhibitionTotalTickets').val();
@@ -557,6 +580,18 @@ function validateEditExhibitionForm() {
     errors.push({ field: 'editExhibitionEndDate', message: 'Дата окончания обязательна' });
   } else if (start_date && new Date(end_date) <= new Date(start_date)) {
     errors.push({ field: 'editExhibitionEndDate', message: 'Дата окончания должна быть позже даты начала' });
+  }
+
+  if (!opening_time) {
+    errors.push({ field: 'editExhibitionOpeningTime', message: 'Время открытия обязательно' });
+  }
+
+  if (!closing_time) {
+    errors.push({ field: 'editExhibitionClosingTime', message: 'Время закрытия обязательно' });
+  }
+
+  if (opening_time && closing_time && opening_time >= closing_time) {
+    errors.push({ field: 'editExhibitionClosingTime', message: 'Время закрытия должно быть позже времени открытия' });
   }
 
   if (!status) {

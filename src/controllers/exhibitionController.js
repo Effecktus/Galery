@@ -28,6 +28,22 @@ exports.createExhibition = async (req, res) => {
       }
     }
 
+    // Проверяем корректность времени работы
+    if (req.body.opening_time && req.body.closing_time) {
+      if (!/^\d{2}:\d{2}$/.test(req.body.opening_time) || !/^\d{2}:\d{2}$/.test(req.body.closing_time)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Время открытия и закрытия должно быть в формате ЧЧ:ММ'
+        });
+      }
+      if (req.body.closing_time <= req.body.opening_time) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Время закрытия должно быть позже времени открытия'
+        });
+      }
+    }
+
     // При создании выставки игнорирую переданное значение remaining_tickets
     const data = { ...req.body };
     data.remaining_tickets = data.total_tickets;
@@ -280,6 +296,22 @@ exports.updateExhibition = async (req, res) => {
         return res.status(400).json({
           status: 'error',
           message: 'Цена билета должна быть положительным числом'
+        });
+      }
+    }
+
+    // Проверяем корректность времени работы
+    if (req.body.opening_time && req.body.closing_time) {
+      if (!/^\d{2}:\d{2}$/.test(req.body.opening_time) || !/^\d{2}:\d{2}$/.test(req.body.closing_time)) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Время открытия и закрытия должно быть в формате ЧЧ:ММ'
+        });
+      }
+      if (req.body.closing_time <= req.body.opening_time) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Время закрытия должно быть позже времени открытия'
         });
       }
     }

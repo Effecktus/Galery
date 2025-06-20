@@ -33,7 +33,15 @@ const validateCreateUser = [
     body('password').trim().notEmpty().withMessage('Пароль обязателен').isLength({ min: 8 }).withMessage('Пароль должен быть не менее 8 символов'),
     body('surname').trim().notEmpty().withMessage('Фамилия обязательна').isLength({ min: 2, max: 50 }).withMessage('Фамилия должна быть от 2 до 50 символов'),
     body('first_name').trim().notEmpty().withMessage('Имя обязательно').isLength({ min: 2, max: 50 }).withMessage('Имя должно быть от 2 до 50 символов'),
-    body('patronymic').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Отчество должно быть от 2 до 50 символов'),
+    body('patronymic').optional({ nullable: true }).trim().custom((value) => {
+        if (value === null || value === '') {
+            return true;
+        }
+        if (value.length < 2 || value.length > 50) {
+            throw new Error('Отчество должно быть от 2 до 50 символов');
+        }
+        return true;
+    }),
     body('role').optional().isIn(['admin', 'manager', 'user']).withMessage('Неверная роль пользователя')
 ];
 
@@ -153,7 +161,14 @@ const validateExhibition = [
     body('ticket_price').isFloat({ min: 0 }).withMessage('Цена должна быть положительным числом'),
     body('total_tickets').isInt({ min: 0 }).withMessage('Количество билетов должно быть положительным числом'),
     body('status').optional().isIn(['upcoming', 'active', 'completed']).withMessage('Неверный статус выставки'),
-    body('description').optional().trim().isLength({ max: 2000 }).withMessage('Описание не должно превышать 2000 символов')
+    body('description').optional().trim().isLength({ max: 2000 }).withMessage('Описание не должно превышать 2000 символов'),
+    body('opening_time').notEmpty().withMessage('Время открытия обязательно').matches(/^\d{2}:\d{2}$/).withMessage('Время открытия должно быть в формате ЧЧ:ММ'),
+    body('closing_time').notEmpty().withMessage('Время закрытия обязательно').matches(/^\d{2}:\d{2}$/).withMessage('Время закрытия должно быть в формате ЧЧ:ММ').custom((value, { req }) => {
+        if (req.body.opening_time && value <= req.body.opening_time) {
+            throw new Error('Время закрытия должно быть позже времени открытия');
+        }
+        return true;
+    })
 ];
 
 const validateExhibitionUpdate = [
@@ -169,7 +184,14 @@ const validateExhibitionUpdate = [
     body('ticket_price').optional().isFloat({ min: 0 }).withMessage('Цена должна быть положительным числом'),
     body('total_tickets').optional().isInt({ min: 0 }).withMessage('Количество билетов должно быть положительным числом'),
     body('status').optional().isIn(['upcoming', 'active', 'completed']).withMessage('Неверный статус выставки'),
-    body('description').optional().trim().isLength({ max: 2000 }).withMessage('Описание не должно превышать 2000 символов')
+    body('description').optional().trim().isLength({ max: 2000 }).withMessage('Описание не должно превышать 2000 символов'),
+    body('opening_time').optional().matches(/^\d{2}:\d{2}$/).withMessage('Время открытия должно быть в формате ЧЧ:ММ'),
+    body('closing_time').optional().matches(/^\d{2}:\d{2}$/).withMessage('Время закрытия должно быть в формате ЧЧ:ММ').custom((value, { req }) => {
+        if (req.body.opening_time && value <= req.body.opening_time) {
+            throw new Error('Время закрытия должно быть позже времени открытия');
+        }
+        return true;
+    })
 ];
 
 const validateExhibitionId = [

@@ -70,6 +70,9 @@
           <p>
             <strong>Дата окончания:</strong> <span id="detailEndDate"></span>
           </p>
+          <p>
+            <strong>Часы работы:</strong> <span id="detailWorkingHours"></span>
+          </p>
           <p><strong>Статус:</strong> <span id="detailStatus"></span></p>
           <p>
             <strong>Цена билета:</strong> <span id="detailTicketPrice"></span>
@@ -121,6 +124,26 @@
           <label for="exhibitionEndDate">Дата окончания</label>
           <input type="date" id="exhibitionEndDate" required />
           <div class="error-message" id="exhibitionEndDateError"></div>
+        </div>
+        <div class="form-group">
+          <label for="exhibitionOpeningTime">Время открытия</label>
+          <input
+            type="time"
+            id="exhibitionOpeningTime"
+            required
+            value="10:00"
+          />
+          <div class="error-message" id="exhibitionOpeningTimeError"></div>
+        </div>
+        <div class="form-group">
+          <label for="exhibitionClosingTime">Время закрытия</label>
+          <input
+            type="time"
+            id="exhibitionClosingTime"
+            required
+            value="18:00"
+          />
+          <div class="error-message" id="exhibitionClosingTimeError"></div>
         </div>
         <div class="form-group">
           <label for="exhibitionStatus">Статус</label>
@@ -212,6 +235,26 @@
           <label for="editExhibitionEndDate">Дата окончания</label>
           <input type="date" id="editExhibitionEndDate" required />
           <div class="error-message" id="editExhibitionEndDateError"></div>
+        </div>
+        <div class="form-group">
+          <label for="editExhibitionOpeningTime">Время открытия</label>
+          <input
+            type="time"
+            id="editExhibitionOpeningTime"
+            required
+            value="10:00"
+          />
+          <div class="error-message" id="editExhibitionOpeningTimeError"></div>
+        </div>
+        <div class="form-group">
+          <label for="editExhibitionClosingTime">Время закрытия</label>
+          <input
+            type="time"
+            id="editExhibitionClosingTime"
+            required
+            value="18:00"
+          />
+          <div class="error-message" id="editExhibitionClosingTimeError"></div>
         </div>
         <div class="form-group">
           <label for="editExhibitionStatus">Статус</label>

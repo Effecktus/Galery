@@ -27,6 +27,37 @@ $(document).ready(function () {
     }, 300); // Задержка 300мс
   });
 
+  // Обработчики фильтрации
+  $('#dateFrom, #dateTo').on('change', function() {
+    loadExhibitions();
+  });
+
+  $('#statusFilter').on('change', function() {
+    loadExhibitions();
+  });
+
+  $('#priceFrom, #priceTo').on('input', function() {
+    loadExhibitions();
+  });
+
+  // Обработчики очистки отдельных фильтров
+  $('#clearDateFilter').on('click', function() {
+    $('#dateFrom').val('');
+    $('#dateTo').val('');
+    loadExhibitions();
+  });
+
+  $('#clearStatusFilter').on('click', function() {
+    $('#statusFilter').val([]);
+    loadExhibitions();
+  });
+
+  $('#clearPriceFilter').on('click', function() {
+    $('#priceFrom').val('');
+    $('#priceTo').val('');
+    loadExhibitions();
+  });
+
   // Обработчик клика по заголовкам таблицы
   $('.sortable').on('click', function() {
     const column = $(this).data('column');
@@ -103,8 +134,41 @@ $(document).ready(function () {
 
 // Функция загрузки выставок
 function loadExhibitions(searchTerm = "") {
+  // Получаем значения всех фильтров
+  const dateFrom = $('#dateFrom').val();
+  const dateTo = $('#dateTo').val();
+  const statusFilter = $('#statusFilter').val();
+  const priceFrom = $('#priceFrom').val();
+  const priceTo = $('#priceTo').val();
+  
+  // Формируем параметры запроса
+  const params = new URLSearchParams();
+  if (searchTerm) {
+    params.append('search', searchTerm.trim());
+  }
+  if (dateFrom) {
+    params.append('start_date', dateFrom);
+  }
+  if (dateTo) {
+    params.append('end_date', dateTo);
+  }
+  if (statusFilter && statusFilter.length > 0) {
+    statusFilter.forEach(status => {
+      params.append('status', status);
+    });
+  }
+  if (priceFrom) {
+    params.append('min_price', priceFrom);
+  }
+  if (priceTo) {
+    params.append('max_price', priceTo);
+  }
+  
+  const queryString = params.toString();
+  const url = `/api/v1/exhibitions${queryString ? `?${queryString}` : ""}`;
+
   $.ajax({
-    url: `/api/v1/exhibitions${searchTerm ? `?search=${searchTerm}` : ""}`,
+    url: url,
     method: 'GET',
     success: function(response) {
       if (response.status === "success") {

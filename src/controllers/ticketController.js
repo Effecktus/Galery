@@ -62,6 +62,8 @@ exports.createTicket = async (req, res) => {
 exports.getAllTickets = async (req, res) => {
   try {
     const where = {};
+    
+    // Поиск по тексту
     if (req.query.search) {
       const searchWords = req.query.search.trim().split(/\s+/);
       where[Op.and] = searchWords.map(word => ({
@@ -79,13 +81,76 @@ exports.getAllTickets = async (req, res) => {
         ]
       }));
     }
+
+    // Фильтрация по дате бронирования
+    if (req.query.booking_date_from || req.query.booking_date_to) {
+      const dateConditions = [];
+      
+      if (req.query.booking_date_from && req.query.booking_date_to) {
+        // Если указаны обе даты, проверяем диапазон
+        dateConditions.push({
+          [Op.and]: [
+            { booking_date: { [Op.gte]: req.query.booking_date_from } },
+            { booking_date: { [Op.lte]: req.query.booking_date_to + ' 23:59:59' } }
+          ]
+        });
+      } else if (req.query.booking_date_from) {
+        // Если указана только начальная дата
+        dateConditions.push({
+          booking_date: { [Op.gte]: req.query.booking_date_from }
+        });
+      } else if (req.query.booking_date_to) {
+        // Если указана только конечная дата
+        dateConditions.push({
+          booking_date: { [Op.lte]: req.query.booking_date_to + ' 23:59:59' }
+        });
+      }
+      
+      if (dateConditions.length > 0) {
+        if (where[Op.and]) {
+          where[Op.and].push({ [Op.and]: dateConditions });
+        } else {
+          where[Op.and] = dateConditions;
+        }
+      }
+    }
+
+    // Фильтрация по цене
+    if (req.query.min_price || req.query.max_price) {
+      const priceConditions = [];
+      
+      if (req.query.min_price) {
+        const minPrice = parseFloat(req.query.min_price);
+        if (!isNaN(minPrice) && minPrice >= 0) {
+          priceConditions.push({ total_price: { [Op.gte]: minPrice } });
+        }
+      }
+      
+      if (req.query.max_price) {
+        const maxPrice = parseFloat(req.query.max_price);
+        if (!isNaN(maxPrice) && maxPrice >= 0) {
+          priceConditions.push({ total_price: { [Op.lte]: maxPrice } });
+        }
+      }
+      
+      if (priceConditions.length > 0) {
+        if (where[Op.and]) {
+          where[Op.and].push({ [Op.and]: priceConditions });
+        } else {
+          where[Op.and] = priceConditions;
+        }
+      }
+    }
+
     const tickets = await Ticket.findAll({
       where,
       include: [
         { model: User, attributes: ['id', 'surname', 'first_name', 'patronymic'], required: false },
         { model: Exhibition, attributes: ['id', 'title'], required: false }
-      ]
+      ],
+      order: [['booking_date', 'DESC']]
     });
+    
     res.status(200).json({
       status: 'success',
       data: { tickets }

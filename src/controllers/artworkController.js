@@ -131,6 +131,38 @@ exports.getAllArtworks = async (req, res) => {
       }
     }
 
+    // Фильтрация по году создания
+    if (req.query.year_from || req.query.year_to) {
+      const yearConditions = [];
+      
+      if (req.query.year_from && req.query.year_to) {
+        // Если указаны оба года, проверяем диапазон
+        yearConditions.push({
+          creation_year: { 
+            [Op.between]: [parseInt(req.query.year_from), parseInt(req.query.year_to)] 
+          }
+        });
+      } else if (req.query.year_from) {
+        // Если указан только начальный год
+        yearConditions.push({
+          creation_year: { [Op.gte]: parseInt(req.query.year_from) }
+        });
+      } else if (req.query.year_to) {
+        // Если указан только конечный год
+        yearConditions.push({
+          creation_year: { [Op.lte]: parseInt(req.query.year_to) }
+        });
+      }
+      
+      if (yearConditions.length > 0) {
+        if (where[Op.and]) {
+          where[Op.and].push({ [Op.and]: yearConditions });
+        } else {
+          where[Op.and] = yearConditions;
+        }
+      }
+    }
+
     const artworks = await Artwork.findAll({
       where,
       include,
@@ -139,7 +171,7 @@ exports.getAllArtworks = async (req, res) => {
 
     // Добавляем статистику по выставкам
     const artworksWithStats = artworks.map(artwork => ({
-      ...artwork.toJSON(),
+      ...normalizePatronymic(artwork.toJSON()),
       statistics: {
         total_exhibitions: artwork.Exhibitions ? artwork.Exhibitions.length : 0
       }
@@ -193,7 +225,7 @@ exports.getArtwork = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        artwork
+        artwork: normalizePatronymic(artwork)
       }
     });
   } catch(err) {
@@ -280,7 +312,7 @@ exports.updateArtwork = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        artwork: updatedArtwork
+        artwork: normalizePatronymic(updatedArtwork)
       }
     });
   } catch(err) {
@@ -353,4 +385,24 @@ exports.deleteArtwork = async (req, res) => {
       message: 'Ошибка при удалении произведения: ' + err.message
     });
   }
+};
+
+// Утилита для замены null в patronymic на пустую строку
+const normalizePatronymic = (obj) => {
+  if (!obj) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(normalizePatronymic);
+  }
+  if (typeof obj === 'object') {
+    if ('patronymic' in obj && obj.patronymic === null) {
+      obj.patronymic = '';
+    }
+    // Рекурсивно для вложенных объектов
+    for (const key in obj) {
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        obj[key] = normalizePatronymic(obj[key]);
+      }
+    }
+  }
+  return obj;
 };

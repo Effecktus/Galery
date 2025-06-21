@@ -10,16 +10,96 @@
     </button>
   </div>
 
-  <!-- Поисковая строка -->
-  <div class="search-section">
-    <div class="search-container">
-      <input
-        type="text"
-        id="searchInput"
-        class="search-input"
-        placeholder="Поиск выставок..."
-        aria-label="Поиск выставок"
-      />
+  <!-- Поиск и фильтрация -->
+  <!-- Фильтрация по статусу (первая строка) -->
+  <div class="filter-section status-filter-section">
+    <div class="filter-container">
+      <div class="filter-group">
+        <label for="statusFilter">Статус:</label>
+        <select id="statusFilter" class="filter-input" multiple>
+          <option value="upcoming">Запланирована</option>
+          <option value="active">Активная</option>
+          <option value="completed">Завершена</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn-secondary" id="clearStatusFilter">
+        <i class="fas fa-times"></i>Очистить
+      </button>
+    </div>
+  </div>
+
+  <div class="search-filter-section">
+    <!-- Поисковая строка -->
+    <div class="search-section">
+      <div class="search-container">
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Поиск выставок..."
+          aria-label="Поиск выставок"
+        />
+      </div>
+    </div>
+
+    <!-- Фильтрация по периоду проведения -->
+    <div class="filter-section">
+      <div class="filter-container">
+        <div class="filter-group">
+          <label for="dateFrom">Период проведения от:</label>
+          <input
+            type="date"
+            id="dateFrom"
+            class="filter-input"
+            aria-label="Дата начала периода"
+          />
+        </div>
+        <div class="filter-group">
+          <label for="dateTo">до:</label>
+          <input
+            type="date"
+            id="dateTo"
+            class="filter-input"
+            aria-label="Дата окончания периода"
+          />
+        </div>
+        <button type="button" class="btn btn-secondary" id="clearDateFilter">
+          <i class="fas fa-times"></i>Очистить
+        </button>
+      </div>
+    </div>
+
+    <!-- Фильтрация по цене билета -->
+    <div class="filter-section">
+      <div class="filter-container">
+        <div class="filter-group">
+          <label for="priceFrom">Цена билета от:</label>
+          <input
+            type="number"
+            id="priceFrom"
+            class="filter-input"
+            min="0"
+            step="0.01"
+            placeholder="₽"
+            aria-label="Минимальная цена"
+          />
+        </div>
+        <div class="filter-group">
+          <label for="priceTo">до:</label>
+          <input
+            type="number"
+            id="priceTo"
+            class="filter-input"
+            min="0"
+            step="0.01"
+            placeholder="₽"
+            aria-label="Максимальная цена"
+          />
+        </div>
+        <button type="button" class="btn btn-secondary" id="clearPriceFilter">
+          <i class="fas fa-times"></i>Очистить
+        </button>
+      </div>
     </div>
   </div>
 

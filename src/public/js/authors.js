@@ -24,6 +24,18 @@ $(document).ready(function () {
     }, 300); // Задержка 300мс
   });
 
+  // Обработчики фильтрации по дате
+  $('#dateFrom, #dateTo').on('change', function() {
+    loadAuthors();
+  });
+
+  // Обработчик очистки фильтра по дате
+  $('#clearDateFilter').on('click', function() {
+    $('#dateFrom').val('');
+    $('#dateTo').val('');
+    loadAuthors();
+  });
+
   // Обработчик клика по заголовкам таблицы
   $('.sortable').on('click', function() {
     const column = $(this).data('column');
@@ -87,8 +99,27 @@ $(document).ready(function () {
 
 // Функция загрузки авторов
 function loadAuthors(searchTerm = "") {
+  // Получаем значения фильтров по дате
+  const dateFrom = $('#dateFrom').val();
+  const dateTo = $('#dateTo').val();
+  
+  // Формируем параметры запроса
+  const params = new URLSearchParams();
+  if (searchTerm) {
+    params.append('name', searchTerm.trim());
+  }
+  if (dateFrom) {
+    params.append('date_from', dateFrom);
+  }
+  if (dateTo) {
+    params.append('date_to', dateTo);
+  }
+  
+  const queryString = params.toString();
+  const url = `/api/v1/authors${queryString ? `?${queryString}` : ""}`;
+
   $.ajax({
-    url: `/api/v1/authors${searchTerm ? `?name=${encodeURIComponent(searchTerm.trim())}` : ""}`,
+    url: url,
     method: 'GET',
     success: function(response) {
       if (response.status === "success") {

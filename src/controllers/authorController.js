@@ -47,6 +47,41 @@ exports.getAllAuthors = async (req, res) => {
       }
     }
 
+    // Фильтрация по периоду жизни
+    if (req.query.date_from || req.query.date_to) {
+      const dateConditions = [];
+      
+      if (req.query.date_from && req.query.date_to) {
+        // Если указаны обе даты, проверяем пересечение периодов
+        // Автор попадает в фильтр, если его период жизни пересекается с выбранным диапазоном
+        // Это означает: дата рождения <= date_to И дата смерти >= date_from
+        dateConditions.push({
+          [Op.and]: [
+            { date_of_birth: { [Op.lte]: req.query.date_to } },
+            { date_of_death: { [Op.gte]: req.query.date_from } }
+          ]
+        });
+      } else if (req.query.date_from) {
+        // Если указана только начальная дата, автор должен был жить после неё
+        dateConditions.push({
+          date_of_death: { [Op.gte]: req.query.date_from }
+        });
+      } else if (req.query.date_to) {
+        // Если указана только конечная дата, автор должен был родиться до неё
+        dateConditions.push({
+          date_of_birth: { [Op.lte]: req.query.date_to }
+        });
+      }
+      
+      if (dateConditions.length > 0) {
+        if (where[Op.and]) {
+          where[Op.and].push({ [Op.and]: dateConditions });
+        } else {
+          where[Op.and] = dateConditions;
+        }
+      }
+    }
+
     const authors = await Author.findAll({
       where,
       include: [{

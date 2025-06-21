@@ -563,6 +563,13 @@ main {
     font-size: 1.5rem;
     cursor: pointer;
     color: #666;
+    margin-left: auto;
+    padding: 0.25rem;
+    transition: color 0.3s;
+}
+
+.modal-close:hover {
+    color: #333;
 }
 
 .modal-body {
@@ -597,10 +604,31 @@ main {
 
 /* Стили для админ-панели */
 .admin-container {
-    width: 70%;
-    max-width: 1800px;
+    width: 85%;
+    max-width: 2000px;
     margin: 2rem auto;
     padding: 0 2rem;
+}
+
+/* Динамические размеры таблиц */
+.admin-container.table-small {
+    width: 60%;
+    max-width: 1200px;
+}
+
+.admin-container.table-medium {
+    width: 75%;
+    max-width: 1600px;
+}
+
+.admin-container.table-large {
+    width: 90%;
+    max-width: 2200px;
+}
+
+.admin-container.table-extra-large {
+    width: 95%;
+    max-width: 2400px;
 }
 
 .admin-header {
@@ -625,21 +653,132 @@ main {
 
 /* Стили для поиска */
 .search-section {
-    margin-bottom: 2rem;
-    width: 100%;
+    margin-bottom: 1.5rem;
 }
 
 .search-container {
-    width: 100%;
+    max-width: 400px;
 }
 
 .search-input {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.75rem 1rem;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
-    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Стили для секции фильтрации */
+.filter-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.filter-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.filter-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #495057;
+    margin: 0;
+}
+
+.filter-input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    transition: border-color 0.3s;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Стили для множественного выбора в фильтрах */
+.filter-input[multiple] {
+    min-height: 80px;
+    max-height: 120px;
+}
+
+.filter-input[multiple] option {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.filter-input[multiple] option:checked {
+    background-color: #007bff;
+    color: white;
+}
+
+.filter-container .btn {
+    align-self: end;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+/* Стили для фильтра статуса на первой строке */
+.status-filter-section {
+    margin-bottom: 1rem;
+    max-width: 400px;
+}
+
+.status-filter-section .filter-container {
+    justify-content: flex-start;
+}
+
+.status-filter-section .filter-group {
+    flex: 1;
+    max-width: 250px;
+}
+
+.status-filter-section .filter-input[multiple] {
+    min-height: 60px;
+    max-height: 80px;
+}
+
+/* Стили для объединенной секции поиска и фильтрации */
+.search-filter-section {
+    display: flex;
+    align-items: end;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.search-filter-section .search-section {
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 300px;
+}
+
+.search-filter-section .filter-section {
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 400px;
 }
 
 /* Стили для страниц авторизации и регистрации */
@@ -650,13 +789,32 @@ main {
 /* Адаптивные стили */
 @media (max-width: 1800px) {
     .admin-container {
+        width: 85%;
+    }
+    .admin-container.table-small {
         width: 70%;
+    }
+    .admin-container.table-medium {
+        width: 80%;
+    }
+    .admin-container.table-large {
+        width: 90%;
+    }
+    .admin-container.table-extra-large {
+        width: 95%;
     }
 }
 
 @media (max-width: 768px) {
     .admin-container {
-        width: 90%;
+        width: 95%;
+        padding: 0 1rem;
+    }
+    .admin-container.table-small,
+    .admin-container.table-medium,
+    .admin-container.table-large,
+    .admin-container.table-extra-large {
+        width: 98%;
         padding: 0 1rem;
     }
 }
@@ -820,5 +978,45 @@ main {
     }
     .profile-info {
         font-size: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .search-filter-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-filter-section .search-section,
+    .search-filter-section .filter-section {
+        min-width: auto;
+    }
+    
+    .filter-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-group label {
+        min-width: 80px;
+        margin: 0;
+    }
+    
+    .filter-container .btn {
+        align-self: stretch;
+    }
+    
+    .status-filter-section {
+        max-width: none;
+    }
+    
+    .status-filter-section .filter-group {
+        max-width: none;
     }
 } 

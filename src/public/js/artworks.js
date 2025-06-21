@@ -29,6 +29,18 @@ $(document).ready(function () {
     }, 300); // Задержка 300мс
   });
 
+  // Обработчики фильтрации по году создания
+  $('#yearFrom, #yearTo').on('input', function() {
+    loadArtworks();
+  });
+
+  // Обработчик очистки фильтра по году
+  $('#clearYearFilter').on('click', function() {
+    $('#yearFrom').val('');
+    $('#yearTo').val('');
+    loadArtworks();
+  });
+
   // Обработчик клика по заголовкам таблицы
   $('.sortable').on('click', function() {
     const column = $(this).data('column');
@@ -135,8 +147,27 @@ $(document).ready(function () {
 
 // Функция загрузки произведений
 function loadArtworks(searchTerm = "") {
+  // Получаем значения фильтров по году
+  const yearFrom = $('#yearFrom').val();
+  const yearTo = $('#yearTo').val();
+  
+  // Формируем параметры запроса
+  const params = new URLSearchParams();
+  if (searchTerm) {
+    params.append('search', searchTerm.trim());
+  }
+  if (yearFrom) {
+    params.append('year_from', yearFrom);
+  }
+  if (yearTo) {
+    params.append('year_to', yearTo);
+  }
+  
+  const queryString = params.toString();
+  const url = `/api/v1/artworks${queryString ? `?${queryString}` : ""}`;
+
   $.ajax({
-    url: `/api/v1/artworks${searchTerm ? `?search=${encodeURIComponent(searchTerm.trim())}` : ""}`,
+    url: url,
     method: 'GET',
     success: function(response) {
       if (response.status === "success") {
@@ -157,8 +188,8 @@ function loadArtworks(searchTerm = "") {
               valueB = b.title.toLowerCase();
               break;
             case 'author':
-              valueA = `${a.Author.surname} ${a.Author.first_name}`.toLowerCase();
-              valueB = `${b.Author.surname} ${b.Author.first_name}`.toLowerCase();
+              valueA = `${a.Author.surname} ${a.Author.first_name} ${a.Author.patronymic || ''}`.toLowerCase();
+              valueB = `${b.Author.surname} ${b.Author.first_name} ${b.Author.patronymic || ''}`.toLowerCase();
               break;
             case 'style':
               valueA = a.Style.name.toLowerCase();

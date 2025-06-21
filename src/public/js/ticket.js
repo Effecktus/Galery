@@ -20,6 +20,28 @@ $(document).ready(function () {
     }, 300);
   });
 
+  // Обработчики фильтрации
+  $('#bookingDateFrom, #bookingDateTo').on('change', function() {
+    loadTickets();
+  });
+
+  $('#priceFrom, #priceTo').on('input', function() {
+    loadTickets();
+  });
+
+  // Обработчики очистки отдельных фильтров
+  $('#clearBookingDateFilter').on('click', function() {
+    $('#bookingDateFrom').val('');
+    $('#bookingDateTo').val('');
+    loadTickets();
+  });
+
+  $('#clearPriceFilter').on('click', function() {
+    $('#priceFrom').val('');
+    $('#priceTo').val('');
+    loadTickets();
+  });
+
   // Сортировка
   $('.sortable').on('click', function() {
     const column = $(this).data('column');
@@ -174,8 +196,35 @@ $(document).ready(function () {
 
 // Загрузка билетов
 function loadTickets(searchTerm = "") {
+  // Получаем значения всех фильтров
+  const bookingDateFrom = $('#bookingDateFrom').val();
+  const bookingDateTo = $('#bookingDateTo').val();
+  const priceFrom = $('#priceFrom').val();
+  const priceTo = $('#priceTo').val();
+  
+  // Формируем параметры запроса
+  const params = new URLSearchParams();
+  if (searchTerm) {
+    params.append('search', searchTerm.trim());
+  }
+  if (bookingDateFrom) {
+    params.append('booking_date_from', bookingDateFrom);
+  }
+  if (bookingDateTo) {
+    params.append('booking_date_to', bookingDateTo);
+  }
+  if (priceFrom) {
+    params.append('min_price', priceFrom);
+  }
+  if (priceTo) {
+    params.append('max_price', priceTo);
+  }
+  
+  const queryString = params.toString();
+  const url = `/api/v1/tickets${queryString ? `?${queryString}` : ""}`;
+
   $.ajax({
-    url: `/api/v1/tickets${searchTerm ? `?search=${encodeURIComponent(searchTerm.trim())}` : ""}`,
+    url: url,
     method: 'GET',
     success: function(response) {
       if (response.status === 'success') {

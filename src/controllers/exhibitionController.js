@@ -1,5 +1,5 @@
 const { Exhibition, Artwork, Ticket, Author, Style, Genre } = require('../models');
-const { Op, ValidationError } = require('sequelize');
+const { Op, ValidationError, Sequelize } = require('sequelize');
 
 // Создание новой выставки
 exports.createExhibition = async (req, res) => {
@@ -83,82 +83,93 @@ exports.createExhibition = async (req, res) => {
 // Получение всех выставок с фильтрацией и пагинацией
 exports.getAllExhibitions = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const offset = (page - 1) * limit;
-
     const where = {};
     
+    // Фильтрация по статусу (поддержка множественного выбора)
     if (req.query.status) {
-      if (!['upcoming', 'active', 'completed'].includes(req.query.status)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректный статус выставки. Допустимые значения: upcoming, active, completed'
-        });
+      const statuses = Array.isArray(req.query.status) ? req.query.status : [req.query.status];
+      const validStatuses = statuses.filter(status => ['upcoming', 'active', 'completed'].includes(status));
+      
+      if (validStatuses.length > 0) {
+        where.status = { [Op.in]: validStatuses };
       }
-      where.status = req.query.status;
     }
 
+    // Фильтрация по месту проведения
     if (req.query.location) {
       where.location = { [Op.like]: `%${req.query.location}%` };
     }
 
+    // Фильтрация по названию
     if (req.query.title) {
       where.title = { [Op.like]: `%${req.query.title}%` };
     }
     
-    if (req.query.start_date) {
-      const startDate = new Date(req.query.start_date);
-      if (isNaN(startDate.getTime())) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректная дата начала'
+    // Фильтрация по периоду проведения
+    if (req.query.start_date || req.query.end_date) {
+      const dateConditions = [];
+      
+      if (req.query.start_date && req.query.end_date) {
+        // Если указаны обе даты, проверяем пересечение периодов
+        // Выставка попадает в фильтр, если её период пересекается с выбранным диапазоном
+        dateConditions.push({
+          [Op.and]: [
+            { start_date: { [Op.lte]: req.query.end_date } },
+            { end_date: { [Op.gte]: req.query.start_date } }
+          ]
+        });
+      } else if (req.query.start_date) {
+        // Если указана только начальная дата, выставка должна начаться после неё
+        dateConditions.push({
+          start_date: { [Op.gte]: req.query.start_date }
+        });
+      } else if (req.query.end_date) {
+        // Если указана только конечная дата, выставка должна закончиться до неё
+        dateConditions.push({
+          end_date: { [Op.lte]: req.query.end_date }
         });
       }
-      where.start_date = { [Op.gte]: startDate };
-    }
-    if (req.query.end_date) {
-      const endDate = new Date(req.query.end_date);
-      if (isNaN(endDate.getTime())) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректная дата окончания'
-        });
+      
+      if (dateConditions.length > 0) {
+        if (where[Op.and]) {
+          where[Op.and].push({ [Op.and]: dateConditions });
+        } else {
+          where[Op.and] = dateConditions;
+        }
       }
-      where.end_date = { [Op.lte]: endDate };
     }
 
-    if (req.query.min_price) {
-      const minPrice = parseFloat(req.query.min_price);
-      if (isNaN(minPrice) || minPrice < 0) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректная минимальная цена'
-        });
+    // Фильтрация по цене билета
+    if (req.query.min_price || req.query.max_price) {
+      const priceConditions = [];
+      
+      if (req.query.min_price) {
+        const minPrice = parseFloat(req.query.min_price);
+        if (!isNaN(minPrice) && minPrice >= 0) {
+          priceConditions.push({ ticket_price: { [Op.gte]: minPrice } });
+        }
       }
-      where.ticket_price = { ...where.ticket_price, [Op.gte]: minPrice };
-    }
-    if (req.query.max_price) {
-      const maxPrice = parseFloat(req.query.max_price);
-      if (isNaN(maxPrice) || maxPrice < 0) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Некорректная максимальная цена'
-        });
+      
+      if (req.query.max_price) {
+        const maxPrice = parseFloat(req.query.max_price);
+        if (!isNaN(maxPrice) && maxPrice >= 0) {
+          priceConditions.push({ ticket_price: { [Op.lte]: maxPrice } });
+        }
       }
-      if (where.ticket_price && where.ticket_price[Op.gte] && maxPrice < where.ticket_price[Op.gte]) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Максимальная цена не может быть меньше минимальной'
-        });
+      
+      if (priceConditions.length > 0) {
+        if (where[Op.and]) {
+          where[Op.and].push({ [Op.and]: priceConditions });
+        } else {
+          where[Op.and] = priceConditions;
+        }
       }
-      where.ticket_price = { ...where.ticket_price, [Op.lte]: maxPrice };
     }
 
     // Многословный поиск по всем основным полям
     if (req.query.search) {
       const searchWords = req.query.search.trim().split(/\s+/);
-      where[Op.and] = searchWords.map(word => ({
+      const searchConditions = searchWords.map(word => ({
         [Op.or]: [
           { title: { [Op.like]: `%${word}%` } },
           { location: { [Op.like]: `%${word}%` } },
@@ -166,12 +177,16 @@ exports.getAllExhibitions = async (req, res) => {
           { description: { [Op.like]: `%${word}%` } }
         ]
       }));
+      
+      if (where[Op.and]) {
+        where[Op.and].push(...searchConditions);
+      } else {
+        where[Op.and] = searchConditions;
+      }
     }
 
-    const { count, rows: exhibitions } = await Exhibition.findAndCountAll({
+    const exhibitions = await Exhibition.findAll({
       where,
-      limit,
-      offset,
       order: [['start_date', 'ASC']],
       include: [
         { 
@@ -194,13 +209,7 @@ exports.getAllExhibitions = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        exhibitions,
-        pagination: {
-          total: count,
-          page,
-          pages: Math.ceil(count / limit),
-          limit
-        }
+        exhibitions
       }
     });
   } catch(err) {

@@ -1,4 +1,4 @@
-<div class="admin-container">
+<div class="admin-container table-small">
   <div class="admin-header">
     <h1>Управление авторами</h1>
     <button type="button" class="btn btn-primary" data-modal="addAuthorModal">
@@ -6,16 +6,46 @@
     </button>
   </div>
 
-  <!-- Поисковая строка -->
-  <div class="search-section">
-    <div class="search-container">
-      <input
-        type="text"
-        id="searchInput"
-        class="search-input"
-        placeholder="Поиск авторов..."
-        aria-label="Поиск авторов"
-      />
+  <!-- Поиск и фильтрация -->
+  <div class="search-filter-section">
+    <!-- Поисковая строка -->
+    <div class="search-section">
+      <div class="search-container">
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Поиск авторов..."
+          aria-label="Поиск авторов"
+        />
+      </div>
+    </div>
+
+    <!-- Фильтрация по дате -->
+    <div class="filter-section">
+      <div class="filter-container">
+        <div class="filter-group">
+          <label for="dateFrom">Период жизни от:</label>
+          <input
+            type="date"
+            id="dateFrom"
+            class="filter-input"
+            aria-label="Дата начала периода"
+          />
+        </div>
+        <div class="filter-group">
+          <label for="dateTo">до:</label>
+          <input
+            type="date"
+            id="dateTo"
+            class="filter-input"
+            aria-label="Дата окончания периода"
+          />
+        </div>
+        <button type="button" class="btn btn-secondary" id="clearDateFilter">
+          <i class="fas fa-times"></i>Очистить
+        </button>
+      </div>
     </div>
   </div>
 

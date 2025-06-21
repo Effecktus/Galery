@@ -10,6 +10,10 @@ const logRequest = (req, res, next) => {
   next();
 };
 
+// Публичные маршруты (до middleware аутентификации)
+router.get('/public', exhibitionController.getPublicExhibitions);
+
+// Защищенные маршруты
 router.get('/', exhibitionController.getAllExhibitions);
 router.get('/:id', validateExhibitionId, validate, exhibitionController.getExhibition);
 

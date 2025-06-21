@@ -406,3 +406,97 @@ exports.deleteExhibition = async (req, res) => {
     });
   }
 };
+
+// Получение только активных и предстоящих выставок для главной страницы
+exports.getPublicExhibitions = async (req, res) => {
+  try {
+    const where = {
+      status: { [Op.in]: ['active', 'upcoming'] }
+    };
+
+    // Фильтрация по дате проведения
+    if (req.query.start_date || req.query.end_date) {
+      const dateConditions = [];
+      if (req.query.start_date && req.query.end_date) {
+        dateConditions.push({
+          [Op.and]: [
+            { start_date: { [Op.lte]: req.query.end_date } },
+            { end_date: { [Op.gte]: req.query.start_date } }
+          ]
+        });
+      } else if (req.query.start_date) {
+        dateConditions.push({ start_date: { [Op.gte]: req.query.start_date } });
+      } else if (req.query.end_date) {
+        dateConditions.push({ end_date: { [Op.lte]: req.query.end_date } });
+      }
+      if (dateConditions.length > 0) {
+        if (where[Op.and]) {
+          where[Op.and].push({ [Op.and]: dateConditions });
+        } else {
+          where[Op.and] = dateConditions;
+        }
+      }
+    }
+
+    // Фильтрация по цене билета
+    if (req.query.min_price || req.query.max_price) {
+      const priceConditions = [];
+      if (req.query.min_price) {
+        const minPrice = parseFloat(req.query.min_price);
+        if (!isNaN(minPrice) && minPrice >= 0) {
+          priceConditions.push({ ticket_price: { [Op.gte]: minPrice } });
+        }
+      }
+      if (req.query.max_price) {
+        const maxPrice = parseFloat(req.query.max_price);
+        if (!isNaN(maxPrice) && maxPrice >= 0) {
+          priceConditions.push({ ticket_price: { [Op.lte]: maxPrice } });
+        }
+      }
+      if (priceConditions.length > 0) {
+        if (where[Op.and]) {
+          where[Op.and].push({ [Op.and]: priceConditions });
+        } else {
+          where[Op.and] = priceConditions;
+        }
+      }
+    }
+
+    // Поиск по названию и месту проведения
+    if (req.query.search) {
+      const searchWords = req.query.search.trim().split(/\s+/);
+      const searchConditions = searchWords.map(word => ({
+        [Op.or]: [
+          { title: { [Op.like]: `%${word}%` } },
+          { location: { [Op.like]: `%${word}%` } }
+        ]
+      }));
+      if (where[Op.and]) {
+        where[Op.and].push(...searchConditions);
+      } else {
+        where[Op.and] = searchConditions;
+      }
+    }
+
+    // Получаем выставки
+    let exhibitions = await Exhibition.findAll({
+      where,
+      order: [
+        // Сначала активные, потом предстоящие, внутри — по дате начала
+        [Sequelize.literal(`CASE WHEN status = 'active' THEN 0 WHEN status = 'upcoming' THEN 1 ELSE 2 END`), 'ASC'],
+        ['start_date', 'ASC']
+      ],
+      attributes: ['id', 'title', 'location', 'description', 'ticket_price', 'start_date', 'end_date', 'status']
+    });
+
+    res.status(200).json({
+      status: 'success',
+      data: { exhibitions }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Ошибка при получении выставок: ' + err.message
+    });
+  }
+};

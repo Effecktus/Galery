@@ -388,20 +388,22 @@ exports.deleteArtwork = async (req, res) => {
 };
 
 // Утилита для замены null в patronymic на пустую строку
-const normalizePatronymic = (obj) => {
-  if (!obj) return obj;
+const normalizePatronymic = (obj, seen = new Set()) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (seen.has(obj)) return obj; // предотвращаем цикл
+  seen.add(obj);
+
   if (Array.isArray(obj)) {
-    return obj.map(normalizePatronymic);
+    return obj.map(item => normalizePatronymic(item, seen));
   }
-  if (typeof obj === 'object') {
-    if ('patronymic' in obj && obj.patronymic === null) {
-      obj.patronymic = '';
-    }
-    // Рекурсивно для вложенных объектов
-    for (const key in obj) {
-      if (typeof obj[key] === 'object' && obj[key] !== null) {
-        obj[key] = normalizePatronymic(obj[key]);
-      }
+
+  if ('patronymic' in obj && obj.patronymic === null) {
+    obj.patronymic = '';
+  }
+
+  for (const key in obj) {
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      obj[key] = normalizePatronymic(obj[key], seen);
     }
   }
   return obj;

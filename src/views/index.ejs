@@ -1,7 +1,92 @@
 <!-- Main content -->
 <main class="main-content">
-  <div class="welcome-section">
-    <h1>Добро пожаловать в Галерею</h1>
-    <p>Здесь будет контент главной страницы</p>
+  <div class="content-container">
+    <h1 style="text-align: center; margin-bottom: 2rem">Актуальные выставки</h1>
+    <form
+      id="exhibition-filter-form"
+      class="search-filter-section"
+      autocomplete="off"
+    >
+      <div class="search-section" style="margin-bottom: 1.5rem">
+        <input
+          type="text"
+          name="search"
+          id="search"
+          class="search-input"
+          placeholder="Поиск по названию или месту проведения..."
+        />
+      </div>
+      <div class="filter-section" style="margin-bottom: 0">
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="start_date">Дата с</label>
+            <input
+              type="date"
+              name="start_date"
+              id="start_date"
+              class="filter-input"
+            />
+          </div>
+          <div class="filter-group">
+            <label for="end_date">Дата по</label>
+            <input
+              type="date"
+              name="end_date"
+              id="end_date"
+              class="filter-input"
+            />
+          </div>
+          <div class="filter-group">
+            <label for="min_price">Цена от</label>
+            <input
+              type="number"
+              name="min_price"
+              id="min_price"
+              class="filter-input"
+              min="0"
+              step="1"
+              placeholder="0"
+            />
+          </div>
+          <div class="filter-group">
+            <label for="max_price">Цена до</label>
+            <input
+              type="number"
+              name="max_price"
+              id="max_price"
+              class="filter-input"
+              min="0"
+              step="1"
+              placeholder="∞"
+            />
+          </div>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            style="align-self: end; margin-top: 1.5rem"
+          >
+            Найти
+          </button>
+        </div>
+      </div>
+    </form>
+    <div
+      id="exhibitions-list"
+      class="grid grid-3"
+      style="margin-top: 2rem"
+    ></div>
+    <div
+      id="no-exhibitions-message"
+      style="
+        display: none;
+        text-align: center;
+        color: #888;
+        margin-top: 2rem;
+        font-size: 1.2rem;
+      "
+    >
+      Нет выставок по выбранным критериям.
+    </div>
   </div>
 </main>
+<script src="/js/main.js"></script>

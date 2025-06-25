@@ -58,6 +58,11 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       validate: { min: 0 }
+    },
+    poster_path: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      validate: { notEmpty: true }
     }
   }, {
     timestamps: true,

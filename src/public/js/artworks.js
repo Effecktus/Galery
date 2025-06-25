@@ -143,6 +143,22 @@ $(document).ready(function () {
     $('#previewImage').attr('src', imageUrl);
     $('#imagePreviewModal').addClass('active');
   });
+
+  // Закрытие предпросмотра изображения (только по клику вне изображения и по Esc)
+  $('#imagePreviewModal').on('click', function(e) {
+    if ($(e.target).is('#imagePreviewModal')) {
+      $('#imagePreviewModal').removeClass('active');
+      $('#previewImage').attr('src', '');
+      $('body').removeClass('modal-open');
+    }
+  });
+  $(document).on('keydown', function(e) {
+    if (e.key === 'Escape') {
+      $('#imagePreviewModal').removeClass('active');
+      $('#previewImage').attr('src', '');
+      $('body').removeClass('modal-open');
+    }
+  });
 });
 
 // Функция загрузки произведений

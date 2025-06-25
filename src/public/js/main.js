@@ -4,7 +4,7 @@ function showNotification(message, type = 'success') {
         class: `alert alert-${type} alert-dismissible fade show`,
         html: `
             ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть">&times;</button>
         `
     });
     
@@ -47,7 +47,13 @@ $(document).ready(function() {
         e.preventDefault();
         
         const form = $(this);
-        const formData = new FormData(this);
+        // Если есть input[type=file], используем FormData, иначе serialize
+        let formData;
+        if (form.find('input[type="file"]').length > 0) {
+            formData = new FormData(this);
+        } else {
+            formData = form.serialize();
+        }
         const submitButton = form.find('[type="submit"]');
         const originalButtonText = submitButton.html();
         
@@ -57,13 +63,27 @@ $(document).ready(function() {
             url: form.attr('action'),
             method: form.attr('method'),
             data: formData,
-            processData: false,
-            contentType: false,
+            // Только если есть файл — processData/contentType false
+            ...(form.find('input[type="file"]').length > 0 ? { processData: false, contentType: false } : {}),
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             },
             success: function(data) {
                 showNotification(data.message || 'Операция выполнена успешно');
+                // Обновление оставшихся билетов после покупки
+                if (form.attr('id') === 'buy-ticket-form') {
+                    const quantity = parseInt(form.find('input[name="quantity"]').val(), 10);
+                    const leftSpan = $(form).closest('.exhibition-info-col').find('p:contains("Осталось билетов")');
+                    if (leftSpan.length) {
+                        // Извлекаем текущее значение
+                        const match = leftSpan.text().match(/(\d+)/);
+                        if (match) {
+                            let left = parseInt(match[1], 10);
+                            left = Math.max(0, left - quantity);
+                            leftSpan.html(`<strong>Осталось билетов:</strong> ${left}`);
+                        }
+                    }
+                }
                 if (data.redirect) {
                     window.location.href = data.redirect;
                 }
@@ -125,16 +145,17 @@ document.addEventListener('DOMContentLoaded', function () {
       card.style.flexDirection = 'column';
       card.style.justifyContent = 'space-between';
       card.innerHTML = `
-        <div class="card-header"><h4>${exh.title}</h4></div>
-        <div class="card-body">
-          <p><strong>Место:</strong> ${exh.location || '-'}</p>
-          <p><strong>Описание:</strong> ${exh.description || '-'}</p>
-          <p><strong>Цена билета:</strong> ${exh.ticket_price ? exh.ticket_price + ' ₽' : 'Бесплатно'}</p>
-          <p><strong>Даты:</strong> ${formatDate(exh.start_date)} — ${formatDate(exh.end_date)}</p>
-        </div>
-        <div style="padding:1rem; text-align:right;">
-          <a href="/exhibitions/${exh.id}" class="btn btn-primary">Подробнее</a>
-        </div>
+        <div class=\"card-header\"><h4>${exh.title}</h4></div>
+        ${exh.poster_path ? `<img src=\"${exh.poster_path}\" class=\"exhibition-poster\" style=\"width:100%;height:180px;object-fit:cover;\" alt=\"Афиша выставки\">` : ''}
+        <div class=\"card-body\">
+          <p><strong>Место:</strong> ${exh.location || '-'}<\/p>
+          <p><strong>Описание:</strong> ${exh.description || '-'}<\/p>
+          <p><strong>Цена билета:</strong> ${exh.ticket_price ? exh.ticket_price + ' ₽' : 'Бесплатно'}<\/p>
+          <p><strong>Даты:</strong> ${formatDate(exh.start_date)} — ${formatDate(exh.end_date)}<\/p>
+        <\/div>
+        <div style=\"padding:1rem; text-align:right;\">
+          <a href=\"/exhibitions/${exh.id}/page" class=\"btn btn-primary\">Подробнее<\/a>
+        <\/div>
       `;
       list.appendChild(card);
     });

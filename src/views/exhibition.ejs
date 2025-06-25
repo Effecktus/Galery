@@ -1,0 +1,188 @@
+<main class="main-content">
+  <div class="content-container">
+    <div
+      class="card exhibition-flex-card"
+      style="
+        max-width: 900px;
+        margin: 2rem auto;
+        display: flex;
+        gap: 2rem;
+        align-items: stretch;
+      "
+    >
+      <% if (exhibition.poster_path) { %>
+      <div class="exhibition-poster-col">
+        <img
+          src="<%= exhibition.poster_path %>"
+          class="exhibition-poster"
+          style="
+            width: 260px;
+            height: 340px;
+            object-fit: cover;
+            display: block;
+            border-radius: 8px 0 0 8px;
+          "
+          alt="Афиша выставки"
+        />
+      </div>
+      <% } %>
+      <div
+        class="exhibition-info-col"
+        style="
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        "
+      >
+        <div>
+          <h2 style="margin-top: 0; margin-bottom: 1.2rem">
+            <%= exhibition.title %>
+          </h2>
+          <p><strong>Место:</strong> <%= exhibition.location || '-' %></p>
+          <p><strong>Описание:</strong> <%= exhibition.description || '-' %></p>
+          <p>
+            <strong>Даты:</strong>
+            <span
+              class="exh-date"
+              data-date="<%= exhibition.start_date %>"
+            ></span>
+            —
+            <span
+              class="exh-date"
+              data-date="<%= exhibition.end_date %>"
+            ></span>
+          </p>
+          <p>
+            <strong>Часы работы:</strong>
+            <span
+              class="exh-time"
+              data-time="<%= exhibition.opening_time %>"
+            ></span>
+            —
+            <span
+              class="exh-time"
+              data-time="<%= exhibition.closing_time %>"
+            ></span>
+          </p>
+          <p>
+            <strong>Цена билета:</strong> <%= exhibition.ticket_price ?
+            exhibition.ticket_price + ' ₽' : 'Бесплатно' %>
+          </p>
+          <p>
+            <strong>Осталось билетов:</strong> <%= exhibition.remaining_tickets
+            %>
+          </p>
+        </div>
+        <% if (user && user.role === 'user' && exhibition.remaining_tickets > 0)
+        { %>
+        <form
+          id="buy-ticket-form"
+          action="/api/v1/tickets"
+          method="POST"
+          data-ajax="true"
+          style="padding-top: 1rem"
+        >
+          <input
+            type="hidden"
+            name="exhibition_id"
+            value="<%= exhibition.id %>"
+          />
+          <div class="form-group">
+            <label for="quantity">Количество билетов:</label>
+            <input
+              type="number"
+              name="quantity"
+              id="quantity"
+              class="filter-input"
+              min="1"
+              max="<%= exhibition.remaining_tickets %>"
+              value="1"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">Купить билет</button>
+        </form>
+        <% } else if (user && user.role === 'user' &&
+        exhibition.remaining_tickets === 0) { %>
+        <div style="padding: 1rem; color: #dc3545">Билеты закончились</div>
+        <% } %>
+      </div>
+    </div>
+    <div class="card" style="max-width: 900px; margin: 2rem auto">
+      <div class="card-header"><h3>Работы на выставке</h3></div>
+      <div class="card-body">
+        <div class="grid grid-3">
+          <% exhibition.Artworks.forEach(function(art) { %>
+          <div
+            class="artwork-card"
+            style="
+              background: #fafbfc;
+              border-radius: 8px;
+              padding: 1rem;
+              text-align: center;
+            "
+          >
+            <div style="font-weight: 600; margin-bottom: 0.5rem">
+              <%= art.title %>
+            </div>
+            <div style="font-size: 0.95em; color: #555; margin-bottom: 0.5rem">
+              <%= art.Author ? art.Author.surname + ' ' + art.Author.first_name
+              + (art.Author.patronymic ? ' ' + art.Author.patronymic : '') : '-'
+              %>
+            </div>
+            <% if (art.image_path) { %>
+            <img
+              src="<%= art.image_path %>"
+              class="artwork-thumbnail"
+              style="
+                width: 100px;
+                height: 100px;
+                object-fit: cover;
+                cursor: pointer;
+                border-radius: 4px;
+              "
+              data-full-image="<%= art.image_path %>"
+              alt="<%= art.title %>"
+            />
+            <% } %>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<!-- Модальное окно предпросмотра изображения -->
+<div class="modal" id="imagePreviewModal">
+  <div class="modal-content">
+    <div class="modal-body">
+      <img
+        id="previewImage"
+        src=""
+        alt="Предпросмотр изображения"
+        style="max-width: 100%; height: auto"
+      />
+    </div>
+  </div>
+</div>
+<script src="/js/artworks.js"></script>
+<script>
+  // Форматирование дат и времени на странице выставки
+  function formatDate(dateString) {
+    const options = { year: "numeric", month: "long", day: "numeric" };
+    return new Date(dateString).toLocaleDateString("ru-RU", options);
+  }
+  function formatTime(timeString) {
+    if (!timeString) return "";
+    return timeString.slice(0, 5);
+  }
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".exh-date").forEach(function (el) {
+      el.textContent = formatDate(el.dataset.date);
+    });
+    document.querySelectorAll(".exh-time").forEach(function (el) {
+      el.textContent = formatTime(el.dataset.time);
+    });
+  });
+</script>

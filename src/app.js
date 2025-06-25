@@ -64,6 +64,10 @@ app.use('/api/v1/styles', styleRoutes);
 app.use('/api/v1/genres', genreRoutes);
 app.use('/api/v1/authors', authorRoutes);
 
+// Подключение основного роутера для публичных страниц
+const mainRoutes = require('./routes/index');
+app.use(mainRoutes);
+
 // Frontend routes
 app.get('/', (req, res) => {
     res.render('index', { 

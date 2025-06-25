@@ -29,4 +29,7 @@ apiV1.use('/users', userRoutes);
 // Подключаем все маршруты к основному роутеру
 router.use('/api/v1', apiV1);
 
+// Если нужен проброс для публичных страниц, добавить:
+router.use('/exhibitions', require('./exhibitionRoutes'));
+
 module.exports = router; 

@@ -109,6 +109,7 @@
       <thead>
         <tr>
           <th class="sortable" data-column="id">ID</th>
+          <th>Афиша</th>
           <th class="sortable" data-column="title">Название</th>
           <th class="sortable" data-column="location">Место проведения</th>
           <th class="sortable" data-column="start_date">Дата начала</th>
@@ -256,20 +257,20 @@
           <div class="error-message" id="exhibitionDescriptionError"></div>
         </div>
         <div class="form-group">
-          <label for="exhibitionArtworks">Произведения искусства</label>
-          <select
-            id="exhibitionArtworks"
-            multiple
-            class="form-control"
-            size="5"
+          <label for="exhibitionArtworksCheckboxes"
+            >Произведения искусства</label
           >
-            <!-- Опции будут загружены через JavaScript -->
-          </select>
+          <div
+            id="exhibitionArtworksCheckboxes"
+            class="artworks-checkbox-list"
+          ></div>
           <div class="error-message" id="exhibitionArtworksError"></div>
-          <small class="form-text"
-            >Удерживайте Ctrl (Cmd на Mac) для выбора нескольких
-            произведений</small
-          >
+        </div>
+        <div class="form-group">
+          <label for="exhibitionPoster">Афиша (изображение)</label>
+          <input type="file" id="exhibitionPoster" accept="image/*" required />
+          <div class="image-preview" id="addPosterPreview"></div>
+          <div class="error-message" id="exhibitionPosterError"></div>
         </div>
       </form>
     </div>
@@ -374,20 +375,20 @@
           <div class="error-message" id="editExhibitionDescriptionError"></div>
         </div>
         <div class="form-group">
-          <label for="editExhibitionArtworks">Произведения искусства</label>
-          <select
-            id="editExhibitionArtworks"
-            multiple
-            class="form-control"
-            size="5"
+          <label for="editExhibitionArtworksCheckboxes"
+            >Произведения искусства</label
           >
-            <!-- Опции будут загружены через JavaScript -->
-          </select>
+          <div
+            id="editExhibitionArtworksCheckboxes"
+            class="artworks-checkbox-list"
+          ></div>
           <div class="error-message" id="editExhibitionArtworksError"></div>
-          <small class="form-text"
-            >Удерживайте Ctrl (Cmd на Mac) для выбора нескольких
-            произведений</small
-          >
+        </div>
+        <div class="form-group">
+          <label for="editExhibitionPoster">Афиша (изображение)</label>
+          <input type="file" id="editExhibitionPoster" accept="image/*" />
+          <div class="image-preview" id="editPosterPreview"></div>
+          <div class="error-message" id="editExhibitionPosterError"></div>
         </div>
       </form>
     </div>
@@ -425,6 +426,20 @@
       <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
         Удалить
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для просмотра изображения афиши (идентично artworks) -->
+<div class="modal" id="imagePreviewModal">
+  <div class="modal-content">
+    <div class="modal-body">
+      <img
+        id="previewImage"
+        src=""
+        alt="Предпросмотр изображения"
+        style="max-width: 100%; height: auto"
+      />
     </div>
   </div>
 </div>

@@ -47,6 +47,16 @@ exports.createExhibition = async (req, res) => {
     // При создании выставки игнорирую переданное значение remaining_tickets
     const data = { ...req.body };
     data.remaining_tickets = data.total_tickets;
+    // poster_path: если файл пришёл, сохраняем путь
+    if (req.file) {
+      data.poster_path = '/media/' + req.file.filename;
+    }
+    if (!data.poster_path) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Путь к афише обязателен'
+      });
+    }
     const exhibition = await Exhibition.create(data);
 
     const exhibitionData = await Exhibition.findByPk(exhibition.id, {
@@ -206,6 +216,15 @@ exports.getAllExhibitions = async (req, res) => {
       ]
     });
 
+    // Нормализуем patronymic у всех авторов
+    exhibitions.forEach(exh => {
+      if (exh.Artworks) {
+        exh.Artworks.forEach(art => {
+          if (art.Author) normalizePatronymic(art.Author);
+        });
+      }
+    });
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -254,6 +273,13 @@ exports.getExhibition = async (req, res) => {
       return res.status(404).json({
         status: 'error',
         message: 'Выставка с указанным ID не найдена'
+      });
+    }
+
+    // Нормализуем patronymic у всех авторов
+    if (exhibition && exhibition.Artworks) {
+      exhibition.Artworks.forEach(art => {
+        if (art.Author) normalizePatronymic(art.Author);
       });
     }
 
@@ -330,7 +356,26 @@ exports.updateExhibition = async (req, res) => {
     if (updateData.total_tickets !== undefined) {
       updateData.remaining_tickets = updateData.total_tickets;
     }
+    // poster_path: если файл пришёл, сохраняем путь
+    if (req.file) {
+      updateData.poster_path = '/media/' + req.file.filename;
+    }
     await exhibition.update(updateData);
+
+    // Обновляем связь с произведениями искусства, если переданы новые id
+    if (req.body.artwork_ids) {
+      let artworkIds = req.body.artwork_ids;
+      if (typeof artworkIds === 'string') {
+        try {
+          artworkIds = JSON.parse(artworkIds);
+        } catch (e) {
+          // если не парсится, игнорируем
+        }
+      }
+      if (Array.isArray(artworkIds)) {
+        await exhibition.setArtworks(artworkIds);
+      }
+    }
 
     const updatedExhibition = await Exhibition.findByPk(req.params.id, {
       include: [{ 
@@ -486,7 +531,16 @@ exports.getPublicExhibitions = async (req, res) => {
         [Sequelize.literal(`CASE WHEN status = 'active' THEN 0 WHEN status = 'upcoming' THEN 1 ELSE 2 END`), 'ASC'],
         ['start_date', 'ASC']
       ],
-      attributes: ['id', 'title', 'location', 'description', 'ticket_price', 'start_date', 'end_date', 'status']
+      attributes: ['id', 'title', 'location', 'description', 'ticket_price', 'start_date', 'end_date', 'status', 'poster_path']
+    });
+
+    // Нормализуем patronymic у всех авторов
+    exhibitions.forEach(exh => {
+      if (exh.Artworks) {
+        exh.Artworks.forEach(art => {
+          if (art.Author) normalizePatronymic(art.Author);
+        });
+      }
     });
 
     res.status(200).json({
@@ -500,3 +554,51 @@ exports.getPublicExhibitions = async (req, res) => {
     });
   }
 };
+
+// Рендер подробной страницы выставки
+exports.renderExhibitionPage = async (req, res) => {
+  try {
+    const exhibition = await Exhibition.findByPk(req.params.id, {
+      include: [
+        {
+          model: Artwork,
+          attributes: ['id', 'title', 'image_path'],
+          include: [{
+            model: Author,
+            attributes: ['surname', 'first_name', 'patronymic']
+          }]
+        }
+      ]
+    });
+    if (!exhibition) {
+      return res.status(404).render('error', { message: 'Выставка не найдена' });
+    }
+    res.render('exhibition', {
+      title: exhibition.title,
+      exhibition: exhibition.toJSON(),
+      user: res.locals.user || null
+    });
+  } catch (err) {
+    res.status(500).render('error', { message: 'Ошибка при загрузке выставки: ' + err.message });
+  }
+};
+
+// Вспомогательная функция для нормализации patronymic
+function normalizePatronymic(obj) {
+  if (!obj) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(normalizePatronymic);
+  }
+  if (typeof obj === 'object') {
+    if ('patronymic' in obj && obj.patronymic === null) {
+      obj.patronymic = '';
+    }
+    // Рекурсивно для вложенных объектов
+    for (const key in obj) {
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        obj[key] = normalizePatronymic(obj[key]);
+      }
+    }
+  }
+  return obj;
+}

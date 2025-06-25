@@ -151,6 +151,7 @@ const validateArtworkUpdate = [
 const validateExhibition = [
     body('title').trim().notEmpty().withMessage('Название выставки обязательно').isLength({ min: 2, max: 100 }).withMessage('Название должно быть от 2 до 100 символов'),
     body('location').trim().notEmpty().withMessage('Место проведения обязательно').isLength({ min: 2, max: 100 }).withMessage('Место проведения должно быть от 2 до 100 символов'),
+    body('poster_path').trim().notEmpty().withMessage('Путь к афише обязателен').isLength({ max: 255 }).withMessage('Путь к афише не должен превышать 255 символов'),
     body('start_date').isDate().withMessage('Неверный формат даты начала'),
     body('end_date').isDate().withMessage('Неверный формат даты окончания').custom((value, { req }) => {
         if (new Date(value) <= new Date(req.body.start_date)) {
@@ -174,6 +175,7 @@ const validateExhibition = [
 const validateExhibitionUpdate = [
     body('title').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Название должно быть от 2 до 100 символов'),
     body('location').optional().trim().isLength({ min: 2, max: 100 }).withMessage('Место проведения должно быть от 2 до 100 символов'),
+    body('poster_path').optional().trim().notEmpty().withMessage('Путь к афише обязателен').isLength({ max: 255 }).withMessage('Путь к афише не должен превышать 255 символов'),
     body('start_date').optional().isDate().withMessage('Неверный формат даты начала'),
     body('end_date').optional().isDate().withMessage('Неверный формат даты окончания').custom((value, { req }) => {
         if (req.body.start_date && new Date(value) <= new Date(req.body.start_date)) {
@@ -220,16 +222,8 @@ const validateUserId = [
 ];
 
 const validateTicket = [
-    body('exhibition_id').isInt().withMessage('ID выставки должен быть числом'),
-    body('user_id').isInt().withMessage('ID пользователя должен быть числом'),
-    body('quantity').isInt({ min: 1 }).withMessage('Количество билетов должно быть положительным числом'),
-    body('booking_date').isDate().withMessage('Неверный формат даты бронирования').custom((value, { req }) => {
-        if (new Date(value) > new Date()) {
-            throw new Error('Дата бронирования не может быть в будущем');
-        }
-        return true;
-    }),
-    body('total_price').isFloat({ min: 0 }).withMessage('Сумма должна быть положительным числом')
+    body('exhibition_id').toInt().isInt().withMessage('ID выставки должен быть числом'),
+    body('quantity').toInt().isInt({ min: 1 }).withMessage('Количество билетов должно быть положительным числом')
 ];
 
 const validateTicketId = [

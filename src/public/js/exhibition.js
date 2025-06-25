@@ -79,21 +79,22 @@ $(document).ready(function () {
       showErrors(errors);
       return;
     }
-
-    const formData = {
-      title: $('#exhibitionTitle').val().trim(),
-      location: $('#exhibitionLocation').val().trim(),
-      start_date: $('#exhibitionStartDate').val(),
-      end_date: $('#exhibitionEndDate').val(),
-      opening_time: $('#exhibitionOpeningTime').val(),
-      closing_time: $('#exhibitionClosingTime').val(),
-      status: $('#exhibitionStatus').val(),
-      ticket_price: parseFloat($('#exhibitionTicketPrice').val()),
-      total_tickets: parseInt($('#exhibitionTotalTickets').val()),
-      description: $('#exhibitionDescription').val().trim(),
-      artwork_ids: Array.from($('#exhibitionArtworks').val()).map(Number)
-    };
-
+    const formData = new FormData();
+    formData.append('title', $('#exhibitionTitle').val().trim());
+    formData.append('location', $('#exhibitionLocation').val().trim());
+    formData.append('start_date', $('#exhibitionStartDate').val());
+    formData.append('end_date', $('#exhibitionEndDate').val());
+    formData.append('opening_time', $('#exhibitionOpeningTime').val());
+    formData.append('closing_time', $('#exhibitionClosingTime').val());
+    formData.append('status', $('#exhibitionStatus').val());
+    formData.append('ticket_price', parseFloat($('#exhibitionTicketPrice').val()));
+    formData.append('total_tickets', parseInt($('#exhibitionTotalTickets').val()));
+    formData.append('description', $('#exhibitionDescription').val().trim());
+    formData.append('artwork_ids', JSON.stringify(getCheckedArtworkIds('#exhibitionArtworksCheckboxes')));
+    const posterFile = $('#exhibitionPoster')[0].files[0];
+    if (posterFile) {
+      formData.append('poster', posterFile);
+    }
     addExhibition(formData);
   });
 
@@ -104,23 +105,51 @@ $(document).ready(function () {
       showErrors(errors);
       return;
     }
-
     const id = $('#editExhibitionId').val();
-    const formData = {
-      title: $('#editExhibitionTitle').val().trim(),
-      location: $('#editExhibitionLocation').val().trim(),
-      start_date: $('#editExhibitionStartDate').val(),
-      end_date: $('#editExhibitionEndDate').val(),
-      opening_time: $('#editExhibitionOpeningTime').val(),
-      closing_time: $('#editExhibitionClosingTime').val(),
-      status: $('#editExhibitionStatus').val(),
-      ticket_price: parseFloat($('#editExhibitionTicketPrice').val()),
-      total_tickets: parseInt($('#editExhibitionTotalTickets').val()),
-      description: $('#editExhibitionDescription').val().trim(),
-      artwork_ids: Array.from($('#editExhibitionArtworks').val()).map(Number)
-    };
-
+    const formData = new FormData();
+    formData.append('title', $('#editExhibitionTitle').val().trim());
+    formData.append('location', $('#editExhibitionLocation').val().trim());
+    formData.append('start_date', $('#editExhibitionStartDate').val());
+    formData.append('end_date', $('#editExhibitionEndDate').val());
+    formData.append('opening_time', $('#editExhibitionOpeningTime').val());
+    formData.append('closing_time', $('#editExhibitionClosingTime').val());
+    formData.append('status', $('#editExhibitionStatus').val());
+    formData.append('ticket_price', parseFloat($('#editExhibitionTicketPrice').val()));
+    formData.append('total_tickets', parseInt($('#editExhibitionTotalTickets').val()));
+    formData.append('description', $('#editExhibitionDescription').val().trim());
+    formData.append('artwork_ids', JSON.stringify(getCheckedArtworkIds('#editExhibitionArtworksCheckboxes')));
+    const posterFile = $('#editExhibitionPoster')[0].files[0];
+    if (posterFile) {
+      formData.append('poster', posterFile);
+    }
     updateExhibition(id, formData);
+  });
+
+  // Предпросмотр афиши при выборе файла (добавление)
+  $('#exhibitionPoster').on('change', function() {
+    const file = this.files[0];
+    const preview = $('#addPosterPreview');
+    preview.empty();
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.html(`<img src="${e.target.result}" alt="Preview" style="max-width: 100%;">`);
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+  // Предпросмотр афиши при выборе файла (редактирование)
+  $('#editExhibitionPoster').on('change', function() {
+    const file = this.files[0];
+    const preview = $('#editPosterPreview');
+    preview.empty();
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.html(`<img src="${e.target.result}" alt="Preview" style="max-width: 100%;">`);
+      };
+      reader.readAsDataURL(file);
+    }
   });
 
   // Обработчик удаления выставки
@@ -129,6 +158,31 @@ $(document).ready(function () {
     if (id) {
       deleteExhibition(id);
     }
+  });
+
+  // Делегирование: клик по строке таблицы
+  $('#exhibitionsTableBody').on('click', '.exhibition-row', function(e) {
+    if ($(e.target).closest('button').length || $(e.target).hasClass('poster-thumbnail')) return;
+    const exhibitionId = $(this).data('exhibition-id');
+    showExhibitionDetails(exhibitionId);
+  });
+
+  // Делегирование: клик по миниатюре афиши
+  $('#exhibitionsTableBody').on('click', '.poster-thumbnail', function(e) {
+    e.stopPropagation();
+    const posterUrl = $(this).data('full-poster');
+    $('#previewImage').attr('src', posterUrl);
+    $('#imagePreviewModal').addClass('active');
+    $('body').addClass('modal-open');
+  });
+
+  // Добавляем обработчик предпросмотра афиши
+  $('.poster-thumbnail').on('click', function(e) {
+    e.stopPropagation();
+    const posterUrl = $(this).data('full-poster');
+    $('#previewImage').attr('src', posterUrl);
+    $('#imagePreviewModal').addClass('active');
+    $('body').addClass('modal-open');
   });
 });
 
@@ -222,9 +276,14 @@ function loadExhibitions(searchTerm = "") {
         });
 
         exhibitions.forEach(function(exhibition) {
+          // Преобразуем путь к афише
+          const posterPath = exhibition.poster_path ? exhibition.poster_path.split('/').pop() : '';
+          const posterUrl = posterPath ? `/media/${posterPath}` : '';
+          const posterCell = posterUrl ? `<img src="${posterUrl}" alt="Афиша" class="poster-thumbnail" data-full-poster="${posterUrl}" style="max-width: 60px; max-height: 60px; cursor: pointer;">` : '';
           const row = `
             <tr class="exhibition-row" data-exhibition-id="${exhibition.id}">
               <td>${exhibition.id}</td>
+              <td>${posterCell}</td>
               <td>${exhibition.title}</td>
               <td>${exhibition.location}</td>
               <td>${formatDate(exhibition.start_date)}</td>
@@ -244,15 +303,6 @@ function loadExhibitions(searchTerm = "") {
           `;
           tbody.append(row);
         });
-
-        // Добавляем обработчик клика по строке
-        $('.exhibition-row').on('click', function(e) {
-          // Игнорируем клик по кнопкам действий
-          if (!$(e.target).closest('button').length) {
-            const exhibitionId = $(this).data('exhibition-id');
-            showExhibitionDetails(exhibitionId);
-          }
-        });
       }
     },
     error: function(xhr) {
@@ -265,21 +315,41 @@ function loadExhibitions(searchTerm = "") {
   });
 }
 
-// Функция загрузки произведений искусства
-function loadArtworks() {
+// --- Новый способ выбора картин через чекбоксы ---
+function renderArtworksCheckboxes(artworks, containerId, selectedIds = []) {
+  const container = $(containerId);
+  container.empty();
+  artworks.forEach(artwork => {
+    const checked = selectedIds.includes(artwork.id) ? 'checked' : '';
+    // ФИО автора полностью
+    const author = artwork.Author;
+    const authorFio = [author.surname, author.first_name, author.patronymic].filter(Boolean).join(' ');
+    const label = `${artwork.title} (${authorFio})`;
+    // Выровнять чекбоксы по правому краю
+    const checkbox = `<label class="artwork-checkbox-item" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;cursor:pointer;gap:8px;">
+      <span style="flex:1;">${label}</span>
+      <input type="checkbox" value="${artwork.id}" style="margin-left:8px;width:18px;height:18px;" ${checked} />
+    </label>`;
+    container.append(checkbox);
+  });
+}
+
+function getCheckedArtworkIds(containerId) {
+  return $(containerId + ' input[type="checkbox"]:checked')
+    .map(function() { return Number($(this).val()); })
+    .get();
+}
+
+// --- Переопределяю loadArtworks ---
+function loadArtworks(selectedAdd = [], selectedEdit = []) {
   $.ajax({
     url: '/api/v1/artworks',
     method: 'GET',
     success: function(response) {
       if (response.status === "success") {
         const artworks = response.data.artworks;
-        const artworkSelects = $('#exhibitionArtworks, #editExhibitionArtworks');
-        
-        artworkSelects.empty();
-        artworks.forEach(function(artwork) {
-          const option = `<option value="${artwork.id}">${artwork.title} (${artwork.Author.surname} ${artwork.Author.first_name})</option>`;
-          artworkSelects.append(option);
-        });
+        renderArtworksCheckboxes(artworks, '#exhibitionArtworksCheckboxes', selectedAdd);
+        renderArtworksCheckboxes(artworks, '#editExhibitionArtworksCheckboxes', selectedEdit);
       }
     },
     error: function(xhr) {
@@ -297,13 +367,16 @@ function addExhibition(formData) {
   $.ajax({
     url: '/api/v1/exhibitions',
     method: 'POST',
-    contentType: 'application/json',
-    data: JSON.stringify(formData),
+    data: formData,
+    processData: false,
+    contentType: false,
     success: function(response) {
       if (response.status === "success") {
         $('#addExhibitionModal').removeClass('active');
         clearErrors();
         $('#addExhibitionForm')[0].reset();
+        $('#exhibitionPoster').val('');
+        $('#addPosterPreview').empty();
         loadExhibitions();
       }
     },
@@ -345,11 +418,9 @@ function editExhibition(id) {
         $('#editExhibitionTicketPrice').val(exhibition.ticket_price);
         $('#editExhibitionDescription').val(exhibition.description);
         $('#editExhibitionTotalTickets').val(exhibition.total_tickets);
-        
-        // Устанавливаем выбранные произведения
+        // Устанавливаем выбранные произведения через чекбоксы
         const selectedArtworkIds = exhibition.Artworks.map(artwork => artwork.id);
-        $('#editExhibitionArtworks').val(selectedArtworkIds);
-        
+        loadArtworks([], selectedArtworkIds);
         $('#editExhibitionModal').addClass('active');
       }
     },
@@ -368,13 +439,16 @@ function updateExhibition(id, formData) {
   $.ajax({
     url: `/api/v1/exhibitions/${id}`,
     method: 'PATCH',
-    contentType: 'application/json',
-    data: JSON.stringify(formData),
+    data: formData,
+    processData: false,
+    contentType: false,
     success: function(response) {
       if (response.status === "success") {
         $('#editExhibitionModal').removeClass('active');
         clearErrors();
         $('#editExhibitionForm')[0].reset();
+        $('#editExhibitionPoster').val('');
+        $('#editPosterPreview').empty();
         loadExhibitions();
       }
     },
@@ -538,7 +612,7 @@ function validateAddExhibitionForm() {
   const ticket_price = $('#exhibitionTicketPrice').val();
   const total_tickets = $('#exhibitionTotalTickets').val();
   const description = $('#exhibitionDescription').val().trim();
-  const artwork_ids = $('#exhibitionArtworks').val();
+  const artwork_ids = getCheckedArtworkIds('#exhibitionArtworksCheckboxes');
 
   const errors = [];
 
@@ -602,7 +676,7 @@ function validateAddExhibitionForm() {
   }
 
   if (!artwork_ids || artwork_ids.length === 0) {
-    errors.push({ field: 'exhibitionArtworks', message: 'Выберите хотя бы одно произведение искусства' });
+    errors.push({ field: 'exhibitionArtworksCheckboxes', message: 'Выберите хотя бы одно произведение искусства' });
   }
 
   return errors;
@@ -620,7 +694,7 @@ function validateEditExhibitionForm() {
   const ticket_price = $('#editExhibitionTicketPrice').val();
   const total_tickets = $('#editExhibitionTotalTickets').val();
   const description = $('#editExhibitionDescription').val().trim();
-  const artwork_ids = $('#editExhibitionArtworks').val();
+  const artwork_ids = getCheckedArtworkIds('#editExhibitionArtworksCheckboxes');
 
   const errors = [];
 
@@ -684,7 +758,7 @@ function validateEditExhibitionForm() {
   }
 
   if (!artwork_ids || artwork_ids.length === 0) {
-    errors.push({ field: 'editExhibitionArtworks', message: 'Выберите хотя бы одно произведение искусства' });
+    errors.push({ field: 'editExhibitionArtworksCheckboxes', message: 'Выберите хотя бы одно произведение искусства' });
   }
 
   return errors;
@@ -693,4 +767,21 @@ function validateEditExhibitionForm() {
 // Добавляем очистку ошибок при открытии модальных окон
 $('[data-modal="addExhibitionModal"]').on('click', function() {
   clearErrors();
+  loadArtworks();
+});
+
+// Закрытие предпросмотра афиши (только по клику вне изображения и по Esc)
+$('#imagePreviewModal').on('click', function(e) {
+  if ($(e.target).is('#imagePreviewModal')) {
+    $('#imagePreviewModal').removeClass('active');
+    $('#previewImage').attr('src', '');
+    $('body').removeClass('modal-open');
+  }
+});
+$(document).on('keydown', function(e) {
+  if (e.key === 'Escape') {
+    $('#imagePreviewModal').removeClass('active');
+    $('#previewImage').attr('src', '');
+    $('body').removeClass('modal-open');
+  }
 });

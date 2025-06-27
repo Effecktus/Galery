@@ -1,0 +1,21 @@
+<main class="main-content">
+    <div class="content-container">
+        <h1 style="text-align: center; margin-bottom: 2rem"><%= title %></h1>
+
+        <!-- Список выставок -->
+        <div
+                id="exhibitions-list"
+                class="grid grid-3"
+                style="margin-top: 2rem"
+        ></div>
+
+        <!-- Сообщение об отсутствии выставок -->
+        <p id="no-exhibitions-message"
+           class="text-center text-gray-600 mt-8"
+           style="display:none">
+            Нет выставок по выбранным критериям.
+        </p>
+    </div>
+</main>
+<script src="/js/main.js"></script>
+<%- include('partials/footer') %>

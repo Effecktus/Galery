@@ -112,7 +112,6 @@ exports.getAllArtworks = async (req, res) => {
 
     if (req.query.search) {
       const searchTerms = req.query.search.toLowerCase().split(' ').filter(term => term.length > 0);
-      
       if (searchTerms.length > 0) {
         where[Op.and] = searchTerms.map(term => ({
           [Op.or]: [
@@ -330,6 +329,42 @@ exports.updateArtwork = async (req, res) => {
       status: 'error',
       message: 'Ошибка при обновлении произведения: ' + err.message
     });
+  }
+};
+
+exports.getArtworkExhibitions = async (req, res) => {
+  try {
+    const artworkId = req.params.id;
+    const exhibitions = await Exhibition.findAll({
+      include: [{ model: Artwork, attributes: [], through: { attributes: [] }, where: { id: artworkId } }],
+      attributes: ['id', 'title', 'start_date', 'end_date', 'location']
+    });
+
+    res.status(200).json({ status: 'success', data: { exhibitions } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: 'error', message: 'Ошибка при получении выставок для произведения: ' + err.message });
+  }
+};
+
+exports.renderArtworksPage = async (req, res, next) => {
+  try {
+    // Берём все картины вместе с автором, стилем и жанром
+    const artworks = await Artwork.findAll({
+      include: [
+        { model: Author, attributes: ['surname','first_name','patronymic'] },
+        { model: Style,  attributes: ['name'] },
+        { model: Genre,  attributes: ['name'] }
+      ],
+      order: [['id', 'ASC']]
+    });
+    res.render('artworks', {
+      title: 'Картины',
+      user:  res.locals.user || null,
+      artworks
+    });
+  } catch (err) {
+    next(err);
   }
 };
 

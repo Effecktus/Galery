@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const {DataTypes} = require('sequelize');
 const bcrypt = require('bcryptjs');
 
 module.exports = (sequelize) => {
@@ -69,7 +69,7 @@ module.exports = (sequelize) => {
     });
 
     // Метод для проверки пароля
-    User.prototype.checkPassword = async function(candidatePassword) {
+    User.prototype.checkPassword = async function (candidatePassword) {
         return await bcrypt.compare(candidatePassword, this.password);
     };
 

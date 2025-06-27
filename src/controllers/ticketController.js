@@ -19,6 +19,12 @@ exports.createTicket = async (req, res) => {
         message: 'Выставка не найдена'
       });
     }
+    if (exhibition.status !== 'active') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Выставка недоступна для покупки билетов'
+      });
+    }
     if (exhibition.remaining_tickets < quantity) {
       return res.status(400).json({
         status: 'error',

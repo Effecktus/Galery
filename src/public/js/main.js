@@ -69,8 +69,7 @@ $(document).ready(function() {
                 'X-Requested-With': 'XMLHttpRequest'
             },
             success: function(data) {
-                showNotification(data.message || 'Операция выполнена успешно');
-                // Обновление оставшихся билетов после покупки
+                alert( 'Операция выполнена успешно');
                 if (form.attr('id') === 'buy-ticket-form') {
                     const quantity = parseInt(form.find('input[name="quantity"]').val(), 10);
                     const leftSpan = $(form).closest('.exhibition-info-col').find('p:contains("Осталось билетов")');

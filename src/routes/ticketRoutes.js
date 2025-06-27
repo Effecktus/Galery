@@ -13,7 +13,7 @@ const logRequest = (req, res, next) => {
 router.use(auth.protect);
 router.use(logRequest);
 
-router.post('/', validateTicket, validate, createTicket);
+router.post('/', auth.restrictTo('user'), validateTicket, validate, createTicket);
 router.get('/my-tickets', getMyTickets);
 router.get('/:id', validateTicketId, validate, getTicket);
 router.delete('/:id', validateTicketId, validate, cancelTicket);

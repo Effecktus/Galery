@@ -8,7 +8,7 @@ exports.createExhibition = async (req, res) => {
     if (req.body.start_date && req.body.end_date) {
       const startDate = new Date(req.body.start_date);
       const endDate = new Date(req.body.end_date);
-      
+
       if (startDate >= endDate) {
         return res.status(400).json({
           status: 'error',
@@ -60,7 +60,7 @@ exports.createExhibition = async (req, res) => {
     const exhibition = await Exhibition.create(data);
 
     const exhibitionData = await Exhibition.findByPk(exhibition.id, {
-      include: [{ 
+      include: [{
         model: Artwork,
         attributes: ['id', 'title', 'creation_year', 'image_path']
       }]
@@ -86,7 +86,7 @@ exports.createExhibition = async (req, res) => {
     res.status(400).json({
       status: 'error',
       message: 'Не удалось создать выставку: ' + err.message
-    });      
+    });
   }
 };
 
@@ -94,12 +94,12 @@ exports.createExhibition = async (req, res) => {
 exports.getAllExhibitions = async (req, res) => {
   try {
     const where = {};
-    
+
     // Фильтрация по статусу (поддержка множественного выбора)
     if (req.query.status) {
       const statuses = Array.isArray(req.query.status) ? req.query.status : [req.query.status];
       const validStatuses = statuses.filter(status => ['upcoming', 'active', 'completed'].includes(status));
-      
+
       if (validStatuses.length > 0) {
         where.status = { [Op.in]: validStatuses };
       }
@@ -114,11 +114,11 @@ exports.getAllExhibitions = async (req, res) => {
     if (req.query.title) {
       where.title = { [Op.like]: `%${req.query.title}%` };
     }
-    
+
     // Фильтрация по периоду проведения
     if (req.query.start_date || req.query.end_date) {
       const dateConditions = [];
-      
+
       if (req.query.start_date && req.query.end_date) {
         // Если указаны обе даты, проверяем пересечение периодов
         // Выставка попадает в фильтр, если её период пересекается с выбранным диапазоном
@@ -139,7 +139,7 @@ exports.getAllExhibitions = async (req, res) => {
           end_date: { [Op.lte]: req.query.end_date }
         });
       }
-      
+
       if (dateConditions.length > 0) {
         if (where[Op.and]) {
           where[Op.and].push({ [Op.and]: dateConditions });
@@ -152,21 +152,21 @@ exports.getAllExhibitions = async (req, res) => {
     // Фильтрация по цене билета
     if (req.query.min_price || req.query.max_price) {
       const priceConditions = [];
-      
+
       if (req.query.min_price) {
         const minPrice = parseFloat(req.query.min_price);
         if (!isNaN(minPrice) && minPrice >= 0) {
           priceConditions.push({ ticket_price: { [Op.gte]: minPrice } });
         }
       }
-      
+
       if (req.query.max_price) {
         const maxPrice = parseFloat(req.query.max_price);
         if (!isNaN(maxPrice) && maxPrice >= 0) {
           priceConditions.push({ ticket_price: { [Op.lte]: maxPrice } });
         }
       }
-      
+
       if (priceConditions.length > 0) {
         if (where[Op.and]) {
           where[Op.and].push({ [Op.and]: priceConditions });
@@ -187,7 +187,7 @@ exports.getAllExhibitions = async (req, res) => {
           { description: { [Op.like]: `%${word}%` } }
         ]
       }));
-      
+
       if (where[Op.and]) {
         where[Op.and].push(...searchConditions);
       } else {
@@ -199,7 +199,7 @@ exports.getAllExhibitions = async (req, res) => {
       where,
       order: [['start_date', 'ASC']],
       include: [
-        { 
+        {
           model: Artwork,
           attributes: ['id', 'title', 'creation_year', 'image_path'],
           include: [
@@ -244,7 +244,7 @@ exports.getExhibition = async (req, res) => {
   try {
     const exhibition = await Exhibition.findByPk(req.params.id, {
       include: [
-        { 
+        {
           model: Artwork,
           attributes: ['id', 'title', 'creation_year', 'image_path', 'author_id', 'style_id', 'genre_id'],
           include: [
@@ -285,7 +285,7 @@ exports.getExhibition = async (req, res) => {
 
     res.status(200).json({
       status: 'success',
-      data: { 
+      data: {
         exhibition,
         statistics: {
           total_artworks: exhibition.Artworks.length,
@@ -305,7 +305,7 @@ exports.getExhibition = async (req, res) => {
 exports.updateExhibition = async (req, res) => {
   try {
     const exhibition = await Exhibition.findByPk(req.params.id);
-    
+
     if (!exhibition) {
       return res.status(404).json({
         status: 'error',
@@ -316,7 +316,7 @@ exports.updateExhibition = async (req, res) => {
     if (req.body.start_date || req.body.end_date) {
       const startDate = new Date(req.body.start_date || exhibition.start_date);
       const endDate = new Date(req.body.end_date || exhibition.end_date);
-      
+
       if (startDate >= endDate) {
         return res.status(400).json({
           status: 'error',
@@ -378,7 +378,7 @@ exports.updateExhibition = async (req, res) => {
     }
 
     const updatedExhibition = await Exhibition.findByPk(req.params.id, {
-      include: [{ 
+      include: [{
         model: Artwork,
         attributes: ['id', 'title', 'creation_year', 'image_path']
       }]
@@ -386,7 +386,7 @@ exports.updateExhibition = async (req, res) => {
 
     res.status(200).json({
       status: 'success',
-      data: { 
+      data: {
         exhibition: updatedExhibition
       }
     });
@@ -422,7 +422,7 @@ exports.deleteExhibition = async (req, res) => {
     const exhibition = await Exhibition.findByPk(req.params.id, {
       include: [{ model: Ticket }]
     });
-    
+
     if (!exhibition) {
       return res.status(404).json({
         status: 'error',
@@ -450,6 +450,13 @@ exports.deleteExhibition = async (req, res) => {
       message: 'Ошибка при удалении выставки: ' + err.message
     });
   }
+};
+
+exports.renderExhibitionsPage = (req, res) => {
+  res.render('exhibitions', {
+    title: 'Выставки',
+    user: res.locals.user || null
+  });
 };
 
 // Получение только активных и предстоящих выставок для главной страницы

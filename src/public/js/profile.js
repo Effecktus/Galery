@@ -1,7 +1,6 @@
-// Открытие модального окна и заполнение формы
 $(document).ready(function () {
+  // Открытие модального окна и заполнение формы
   $('#editProfileBtn').on('click', function () {
-    // Заполнить форму текущими данными
     $('#editProfileSurname').val($('#profileSurname').text());
     $('#editProfileFirstName').val($('#profileFirstName').text());
     $('#editProfilePatronymic').val($('#profilePatronymic').text());
@@ -15,6 +14,11 @@ $(document).ready(function () {
   // Закрытие модального окна
   $('.modal-close').on('click', function () {
     $(this).closest('.modal').removeClass('active');
+  });
+
+  // Блокируем дефолтный сабмит формы, чтобы не было перезагрузки
+  $('#editProfileForm').on('submit', function(e) {
+    e.preventDefault();
   });
 
   // Сохранить изменения
@@ -36,57 +40,69 @@ function clearErrors() {
 
 function showErrors(errors) {
   clearErrors();
-  if (errors && errors.length > 0) {
-    errors.forEach(error => {
-      const field = error.field;
-      const message = error.message;
-      const formGroup = $('#' + field).closest('.form-group');
-      formGroup.addClass('error');
-      $('#' + field).addClass('error');
-      $('#' + field + 'Error').text(message);
-    });
-  }
+  errors.forEach(({ field, message }) => {
+    const input = $('#' + field);
+    const formGroup = input.closest('.form-group');
+    formGroup.addClass('error');
+    input.addClass('error');
+    $('#' + field + 'Error').text(message);
+  });
 }
 
 function validateProfileForm() {
-  const surname = $('#editProfileSurname').val().trim();
-  const first_name = $('#editProfileFirstName').val().trim();
-  const patronymic = $('#editProfilePatronymic').val().trim();
-  const email = $('#editProfileEmail').val().trim();
-  const password = $('#editProfilePassword').val();
-  const passwordConfirm = $('#editProfilePasswordConfirm').val();
+  const surname  = $('#editProfileSurname').val().trim();
+  const first    = $('#editProfileFirstName').val().trim();
+  const patronym = $('#editProfilePatronymic').val().trim();
+  const email    = $('#editProfileEmail').val().trim();
+  const pass     = $('#editProfilePassword').val();
+  const pass2    = $('#editProfilePasswordConfirm').val();
 
   const errors = [];
 
+  // Фамилия: 2–50 символов, только буквы и дефис
   if (!surname) {
     errors.push({ field: 'editProfileSurname', message: 'Фамилия обязательна' });
   } else if (surname.length < 2 || surname.length > 50) {
-    errors.push({ field: 'editProfileSurname', message: 'Фамилия должна быть от 2 до 50 символов' });
+    errors.push({ field: 'editProfileSurname', message: 'Должна быть от 2 до 50 символов' });
+  } else if (!/^[A-Za-zА-Яа-яЁё-]+$/.test(surname)) {
+    errors.push({ field: 'editProfileSurname', message: 'Только буквы и дефис' });
   }
 
-  if (!first_name) {
+  // Имя: 2–50 символов, только буквы и дефис
+  if (!first) {
     errors.push({ field: 'editProfileFirstName', message: 'Имя обязательно' });
-  } else if (first_name.length < 2 || first_name.length > 50) {
-    errors.push({ field: 'editProfileFirstName', message: 'Имя должно быть от 2 до 50 символов' });
+  } else if (first.length < 2 || first.length > 50) {
+    errors.push({ field: 'editProfileFirstName', message: 'Должно быть от 2 до 50 символов' });
+  } else if (!/^[A-Za-zА-Яа-яЁё-]+$/.test(first)) {
+    errors.push({ field: 'editProfileFirstName', message: 'Только буквы и дефис' });
   }
 
-  if (patronymic && (patronymic.length < 2 || patronymic.length > 50)) {
-    errors.push({ field: 'editProfilePatronymic', message: 'Отчество должно быть от 2 до 50 символов' });
+  // Отчество: если указано, 2–50 символов, только буквы и дефис
+  if (patronym) {
+    if (patronym.length < 2 || patronym.length > 50) {
+      errors.push({ field: 'editProfilePatronymic', message: 'Должно быть от 2 до 50 символов' });
+    } else if (!/^[A-Za-zА-Яа-яЁё-]+$/.test(patronym)) {
+      errors.push({ field: 'editProfilePatronymic', message: 'Только буквы и дефис' });
+    }
   }
 
+  // Email: 5–100 символов, валидный формат
   if (!email) {
     errors.push({ field: 'editProfileEmail', message: 'Email обязателен' });
+  } else if (email.length < 5 || email.length > 100) {
+    errors.push({ field: 'editProfileEmail', message: 'От 5 до 100 символов' });
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errors.push({ field: 'editProfileEmail', message: 'Неверный формат email' });
   }
 
-  if (password) {
-    if (password.length < 8) {
-      errors.push({ field: 'editProfilePassword', message: 'Пароль должен быть не менее 8 символов' });
+  // Пароль: если меняем, >=8 и совпадает с подтверждением
+  if (pass) {
+    if (pass.length < 8) {
+      errors.push({ field: 'editProfilePassword', message: 'Не менее 8 символов' });
     }
-    if (!passwordConfirm) {
-      errors.push({ field: 'editProfilePasswordConfirm', message: 'Подтверждение пароля обязательно' });
-    } else if (password !== passwordConfirm) {
+    if (!pass2) {
+      errors.push({ field: 'editProfilePasswordConfirm', message: 'Подтвердите пароль' });
+    } else if (pass !== pass2) {
       errors.push({ field: 'editProfilePasswordConfirm', message: 'Пароли не совпадают' });
     }
   }
@@ -95,53 +111,45 @@ function validateProfileForm() {
 }
 
 function updateProfile() {
-  const surname = $('#editProfileSurname').val().trim();
-  const first_name = $('#editProfileFirstName').val().trim();
-  const patronymic = $('#editProfilePatronymic').val().trim();
-  const email = $('#editProfileEmail').val().trim();
-  const password = $('#editProfilePassword').val();
-
   const data = {
-    surname,
-    first_name,
-    patronymic: patronymic === '' ? null : patronymic,
-    email
+    surname:  $('#editProfileSurname').val().trim(),
+    first_name: $('#editProfileFirstName').val().trim(),
+    patronymic: ($('#editProfilePatronymic').val().trim() || null),
+    email:      $('#editProfileEmail').val().trim()
   };
-  if (password) {
-    data.password = password;
-  }
+  const pass = $('#editProfilePassword').val();
+  if (pass) data.password = pass;
 
   $.ajax({
     url: '/api/v1/users/me',
     method: 'PATCH',
     contentType: 'application/json',
     data: JSON.stringify(data),
-    success: function (response) {
+    success(response) {
       if (response.status === 'success') {
-        // Обновить данные на странице
-        $('#profileSurname').text(response.data.user.surname);
-        $('#profileFirstName').text(response.data.user.first_name);
-        $('#profilePatronymic').text(response.data.user.patronymic);
-        $('#profileEmail').text(response.data.user.email);
+        const u = response.data.user;
+        $('#profileSurname').text(u.surname);
+        $('#profileFirstName').text(u.first_name);
+        $('#profilePatronymic').text(u.patronymic || '');
+        $('#profileEmail').text(u.email);
         $('#editProfileModal').removeClass('active');
         clearErrors();
-        // Можно добавить уведомление об успехе
         alert('Профиль успешно обновлен');
       }
     },
-    error: function (xhr) {
+    error(xhr) {
       if (xhr.status === 401) {
         window.location.href = '/auth/login';
       } else if (xhr.status === 400) {
-        const response = xhr.responseJSON;
-        if (response.errors && response.errors.length > 0) {
-          showErrors(response.errors);
+        const resp = xhr.responseJSON;
+        if (resp.errors && resp.errors.length) {
+          showErrors(resp.errors);
         } else {
-          alert(response.message || 'Ошибка при обновлении профиля');
+          alert(resp.message || 'Ошибка при обновлении профиля');
         }
       } else {
         alert('Ошибка при обновлении профиля');
       }
     }
   });
-} 
+}

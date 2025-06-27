@@ -22,7 +22,10 @@
             <ul class="nav-list">
                 <% if (locals.user) { %> <% if (user.role === 'manager') { %>
                     <li class="nav-item">
-                        <a class="nav-link" href="/manager">Панель менеджера</a>
+                        <a class="nav-link" href="/manager/statistics">Статистика</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/manager/exhibitions">Панель менеджера</a>
                     </li>
                 <% } %>
                 <li class="nav-item">

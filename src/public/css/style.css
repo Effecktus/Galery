@@ -953,6 +953,18 @@ main {
     display: block;
 }
 
+.stat-container {
+    max-width: 400px;
+    margin: 3rem auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 2rem 2.5rem 2rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 /* Стили для профиля администратора */
 .profile-container {
     max-width: 400px;

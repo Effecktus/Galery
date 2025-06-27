@@ -1,0 +1,32 @@
+<div class="stat-container">
+    <h1 class="text-3xl font-bold mb-6 text-center"><%= title %></h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div>
+            <label for="statStart" class="block font-medium">Дата с</label>
+            <input type="date" id="statStart" class="filter-input w-full" />
+        </div>
+        <div>
+            <label for="statEnd" class="block font-medium">Дата по</label>
+            <input type="date" id="statEnd" class="filter-input w-full" />
+        </div>
+        <div class="flex items-end">
+            <button id="fetchStatsBtn" class="btn btn-primary w-full">Показать</button>
+        </div>
+    </div>
+
+    <div id="statsResult" class="space-y-4 text-center">
+        <p id="statsLoading" class="text-gray-600" style="display:none;">
+            Загрузка...
+        </p>
+        <div id="statsContent" class="space-y-2 text-center" style="display:none;">
+            <p><strong>Продано билетов:</strong> <span id="ticketsSold">0</span></p>
+            <p><strong>Выручка:</strong> <span id="totalRevenue">0</span> ₽</p>
+        </div>
+        <p id="statsEmpty" class="text-gray-600 text-center" style="display:none;">
+            Нет данных за выбранный период.
+        </p>
+    </div>
+</div>
+
+<script src="/js/statistics.js"></script>

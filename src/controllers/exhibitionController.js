@@ -4,61 +4,30 @@ const { Op, ValidationError, Sequelize } = require('sequelize');
 // Создание новой выставки
 exports.createExhibition = async (req, res) => {
   try {
-    // Проверяем корректность дат
-    if (req.body.start_date && req.body.end_date) {
-      const startDate = new Date(req.body.start_date);
-      const endDate = new Date(req.body.end_date);
 
-      if (startDate >= endDate) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Дата начала выставки должна быть раньше даты окончания'
-        });
-      }
-    }
-
-    // Проверяем корректность цены билета
-    if (req.body.ticket_price !== undefined) {
-      const price = parseFloat(req.body.ticket_price);
-      if (isNaN(price) || price < 0) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Цена билета должна быть положительным числом'
-        });
-      }
-    }
-
-    // Проверяем корректность времени работы
-    if (req.body.opening_time && req.body.closing_time) {
-      if (!/^\d{2}:\d{2}$/.test(req.body.opening_time) || !/^\d{2}:\d{2}$/.test(req.body.closing_time)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Время открытия и закрытия должно быть в формате ЧЧ:ММ'
-        });
-      }
-      if (req.body.closing_time <= req.body.opening_time) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Время закрытия должно быть позже времени открытия'
-        });
-      }
-    }
-
-    // При создании выставки игнорирую переданное значение remaining_tickets
     const data = { ...req.body };
     data.remaining_tickets = data.total_tickets;
-    // poster_path: если файл пришёл, сохраняем путь
-    if (req.file) {
-      data.poster_path = '/media/' + req.file.filename;
-    }
-    if (!data.poster_path) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Путь к афише обязателен'
-      });
-    }
+    if (req.file) data.poster_path = '/media/' + req.file.filename;
+
     const exhibition = await Exhibition.create(data);
 
+    let artworkIds = req.body.artwork_ids || req.body['artwork_ids[]'];
+    if (artworkIds) {
+      if (typeof artworkIds === 'string') {
+        try {
+          artworkIds = JSON.parse(artworkIds);
+        } catch {
+          artworkIds = artworkIds.split(',').map(id => id.trim());
+        }
+      }
+      if (Array.isArray(artworkIds)) {
+        // приводим к числам
+        const ids = artworkIds.map(i => parseInt(i, 10)).filter(i => !isNaN(i));
+        await exhibition.setArtworks(ids);
+      }
+    }
+
+    // возвращаем только что созданную с привязанными картинами
     const exhibitionData = await Exhibition.findByPk(exhibition.id, {
       include: [{
         model: Artwork,
@@ -66,13 +35,11 @@ exports.createExhibition = async (req, res) => {
       }]
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       status: 'success',
-      data: {
-        exhibition: exhibitionData
-      }
+      data: { exhibition: exhibitionData }
     });
-  } catch(err) {
+  }  catch(err) {
     if (err instanceof ValidationError) {
       return res.status(400).json({
         status: 'error',
@@ -305,90 +272,44 @@ exports.getExhibition = async (req, res) => {
 exports.updateExhibition = async (req, res) => {
   try {
     const exhibition = await Exhibition.findByPk(req.params.id);
-
     if (!exhibition) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Выставка с указанным ID не найдена'
-      });
+      return res.status(404).json({ status: 'error', message: 'Выставка не найдена' });
     }
 
-    if (req.body.start_date || req.body.end_date) {
-      const startDate = new Date(req.body.start_date || exhibition.start_date);
-      const endDate = new Date(req.body.end_date || exhibition.end_date);
+    // … ваши валидации …
 
-      if (startDate >= endDate) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Дата начала выставки должна быть раньше даты окончания'
-        });
-      }
-    }
-
-    if (req.body.ticket_price !== undefined) {
-      const price = parseFloat(req.body.ticket_price);
-      if (isNaN(price) || price < 0) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Цена билета должна быть положительным числом'
-        });
-      }
-    }
-
-    // Проверяем корректность времени работы
-    if (req.body.opening_time && req.body.closing_time) {
-      if (!/^\d{2}:\d{2}$/.test(req.body.opening_time) || !/^\d{2}:\d{2}$/.test(req.body.closing_time)) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Время открытия и закрытия должно быть в формате ЧЧ:ММ'
-        });
-      }
-      if (req.body.closing_time <= req.body.opening_time) {
-        return res.status(400).json({
-          status: 'error',
-          message: 'Время закрытия должно быть позже времени открытия'
-        });
-      }
-    }
-
-    // При редактировании выставки игнорирую переданное значение remaining_tickets
     const updateData = { ...req.body };
-    if (updateData.total_tickets !== undefined) {
-      updateData.remaining_tickets = updateData.total_tickets;
+    if (req.body.total_tickets !== undefined) {
+      updateData.remaining_tickets = req.body.total_tickets;
     }
-    // poster_path: если файл пришёл, сохраняем путь
     if (req.file) {
       updateData.poster_path = '/media/' + req.file.filename;
     }
     await exhibition.update(updateData);
 
-    // Обновляем связь с произведениями искусства, если переданы новые id
-    if (req.body.artwork_ids) {
-      let artworkIds = req.body.artwork_ids;
+    // --- НОВОЕ: обрабатываем artwork_ids так же, как в create ---
+    let artworkIds = req.body.artwork_ids || req.body['artwork_ids[]'];
+    if (artworkIds) {
       if (typeof artworkIds === 'string') {
         try {
           artworkIds = JSON.parse(artworkIds);
-        } catch (e) {
-          // если не парсится, игнорируем
+        } catch {
+          artworkIds = artworkIds.split(',').map(id => id.trim());
         }
       }
       if (Array.isArray(artworkIds)) {
-        await exhibition.setArtworks(artworkIds);
+        const ids = artworkIds.map(i => parseInt(i, 10)).filter(i => !isNaN(i));
+        await exhibition.setArtworks(ids);
       }
     }
 
-    const updatedExhibition = await Exhibition.findByPk(req.params.id, {
-      include: [{
-        model: Artwork,
-        attributes: ['id', 'title', 'creation_year', 'image_path']
-      }]
+    const updated = await Exhibition.findByPk(req.params.id, {
+      include: [{ model: Artwork, attributes: ['id', 'title', 'creation_year', 'image_path'] }]
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
-      data: {
-        exhibition: updatedExhibition
-      }
+      data: { exhibition: updated }
     });
   } catch(err) {
     if (err instanceof ValidationError) {

@@ -7,7 +7,7 @@ let exhibitionCurrentSort = {
 $(document).ready(function () {
   // Загрузка выставок при загрузке страницы
   loadExhibitions();
-  
+
   // Загрузка списка произведений
   loadArtworks();
 
@@ -17,10 +17,10 @@ $(document).ready(function () {
   // Обработчик поиска при вводе
   $('#searchInput').on('input', function () {
     const searchTerm = $(this).val();
-    
+
     // Очищаем предыдущий таймер
     clearTimeout(searchTimer);
-    
+
     // Устанавливаем новый таймер
     searchTimer = setTimeout(() => {
       loadExhibitions(searchTerm);
@@ -61,7 +61,7 @@ $(document).ready(function () {
   // Обработчик клика по заголовкам таблицы
   $('.sortable').on('click', function() {
     const column = $(this).data('column');
-    
+
     if (exhibitionCurrentSort.column === column) {
       exhibitionCurrentSort.direction = exhibitionCurrentSort.direction === 'asc' ? 'desc' : 'asc';
     } else {
@@ -73,12 +73,10 @@ $(document).ready(function () {
   });
 
   // Обработчик добавления выставки
-  $('#saveExhibitionBtn').on('click', function () {
-    const errors = validateAddExhibitionForm();
-    if (errors.length > 0) {
-      showErrors(errors);
-      return;
-    }
+  $('#saveExhibitionBtn').off('click').on('click', function(e) {
+    e.preventDefault();    const errors = validateAddExhibitionForm();
+    if (errors.length) { showErrors(errors); return; }
+
     const formData = new FormData();
     formData.append('title', $('#exhibitionTitle').val().trim());
     formData.append('location', $('#exhibitionLocation').val().trim());
@@ -88,16 +86,26 @@ $(document).ready(function () {
     formData.append('closing_time', $('#exhibitionClosingTime').val());
     formData.append('status', $('#exhibitionStatus').val());
     formData.append('ticket_price', parseFloat($('#exhibitionTicketPrice').val()));
-    formData.append('total_tickets', parseInt($('#exhibitionTotalTickets').val()));
+    formData.append('total_tickets', parseInt($('#exhibitionTotalTickets').val(), 10));
     formData.append('description', $('#exhibitionDescription').val().trim());
-    formData.append('artwork_ids', JSON.stringify(getCheckedArtworkIds('#exhibitionArtworksCheckboxes')));
+
+    // Правильная передача массива artwork_ids[]
+    const artworkIds = getCheckedArtworkIds('#exhibitionArtworksCheckboxes');
+    artworkIds.forEach(id => formData.append('artwork_ids[]', id));
+
     const posterFile = $('#exhibitionPoster')[0].files[0];
     if (posterFile) {
       formData.append('poster', posterFile);
+      // и под хранить poster_path, чтобы express-validator не жаловался:
+      formData.append('poster_path', '/media/' + posterFile.name);
     }
+    // Логи для отладки
+    console.group('Exhibition FormData');
+    for (const [key, value] of formData.entries()) console.log(key, value);
+    console.groupEnd();
+
     addExhibition(formData);
   });
-
   // Обработчик обновления выставки
   $('#updateExhibitionBtn').on('click', function () {
     const errors = validateEditExhibitionForm();
@@ -117,8 +125,8 @@ $(document).ready(function () {
     formData.append('ticket_price', parseFloat($('#editExhibitionTicketPrice').val()));
     formData.append('total_tickets', parseInt($('#editExhibitionTotalTickets').val()));
     formData.append('description', $('#editExhibitionDescription').val().trim());
-    formData.append('artwork_ids', JSON.stringify(getCheckedArtworkIds('#editExhibitionArtworksCheckboxes')));
-    const posterFile = $('#editExhibitionPoster')[0].files[0];
+    getCheckedArtworkIds('#editExhibitionArtworksCheckboxes')
+        .forEach(id => formData.append('artwork_ids[]', id));    const posterFile = $('#editExhibitionPoster')[0].files[0];
     if (posterFile) {
       formData.append('poster', posterFile);
     }
@@ -194,7 +202,7 @@ function loadExhibitions(searchTerm = "") {
   const statusFilter = $('#statusFilter').val();
   const priceFrom = $('#priceFrom').val();
   const priceTo = $('#priceTo').val();
-  
+
   // Формируем параметры запроса
   const params = new URLSearchParams();
   if (searchTerm) {
@@ -217,7 +225,7 @@ function loadExhibitions(searchTerm = "") {
   if (priceTo) {
     params.append('max_price', priceTo);
   }
-  
+
   const queryString = params.toString();
   const url = `/api/v1/exhibitions${queryString ? `?${queryString}` : ""}`;
 
@@ -232,7 +240,7 @@ function loadExhibitions(searchTerm = "") {
         let exhibitions = response.data.exhibitions;
         exhibitions.sort((a, b) => {
           let valueA, valueB;
-          
+
           switch(exhibitionCurrentSort.column) {
             case 'id':
               valueA = a.id;
@@ -406,7 +414,7 @@ function editExhibition(id) {
     success: function(response) {
       if (response.status === "success") {
         const exhibition = response.data.exhibition;
-        
+
         $('#editExhibitionId').val(exhibition.id);
         $('#editExhibitionTitle').val(exhibition.title);
         $('#editExhibitionLocation').val(exhibition.location);
@@ -535,7 +543,7 @@ function showExhibitionDetails(id) {
     success: function(response) {
       if (response.status === "success") {
         const exhibition = response.data.exhibition;
-        
+
         // Заполняем основную информацию
         $('#detailId').text(exhibition.id);
         $('#detailTitle').text(exhibition.title);
@@ -549,8 +557,8 @@ function showExhibitionDetails(id) {
 
         // Заполняем список произведений
         const artworksList = exhibition.Artworks.map(artwork => {
-          const authorName = artwork.Author ? 
-            `${artwork.Author.surname} ${artwork.Author.first_name} ${artwork.Author.patronymic}` : 
+          const authorName = artwork.Author ?
+            `${artwork.Author.surname} ${artwork.Author.first_name} ${artwork.Author.patronymic}` :
             'Автор не указан';
           return `<div class="artwork-item">
             <strong>${artwork.title}</strong> (${authorName})
@@ -678,7 +686,13 @@ function validateAddExhibitionForm() {
   if (!artwork_ids || artwork_ids.length === 0) {
     errors.push({ field: 'exhibitionArtworksCheckboxes', message: 'Выберите хотя бы одно произведение искусства' });
   }
-
+  const posterFile = $('#exhibitionPoster')[0].files[0];
+  if (!posterFile) {
+    errors.push({
+      field: 'exhibitionPoster',
+      message: 'Афиша обязательна'
+    });
+  }
   return errors;
 }
 

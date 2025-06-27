@@ -212,4 +212,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Первая загрузка
   fetchExhibitions();
-}); 
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Получаем элементы lightbox
+    const lightbox = document.getElementById('image-lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+
+    // Делаем делегирование кликов по списку выставок
+    document.getElementById('exhibitions-list').addEventListener('click', function(e) {
+        const img = e.target.closest('.exhibition-poster');
+        if (!img) return;
+
+        // Устанавливаем в модалку src и показываем её
+        lightboxImg.src = img.src;
+        lightbox.style.display = 'flex';
+    });
+
+    // Закрываем по клику на фон
+    lightbox.addEventListener('click', function() {
+        lightbox.style.display = 'none';
+        lightboxImg.src = '';
+    });
+});

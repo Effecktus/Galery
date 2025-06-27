@@ -799,3 +799,31 @@ $(document).on('keydown', function(e) {
     $('body').removeClass('modal-open');
   }
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+  const lightbox = document.getElementById('image-lightbox');
+  const lightboxImg = document.getElementById('lightbox-img');
+
+  // Универсальный обработчик для изображений афиши и картин
+  document.querySelector('.content-container').addEventListener('click', function(e) {
+    const img = e.target.closest('.exhibition-poster, .artwork-thumbnail');
+    if (!img) return;
+
+    const src = img.getAttribute('data-full-image') || img.src;
+    lightboxImg.src = src;
+    lightbox.style.display = 'flex';
+  });
+
+  lightbox.addEventListener('click', function() {
+    lightbox.style.display = 'none';
+    lightboxImg.src = '';
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      lightbox.style.display = 'none';
+      lightboxImg.src = '';
+    }
+  });
+});
+

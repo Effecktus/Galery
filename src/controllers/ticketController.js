@@ -169,12 +169,37 @@ exports.getAllTickets = async (req, res) => {
   }
 };
 
+// Рендер страницы покупок пользователя
+exports.renderUserTickets = async (req, res, next) => {
+  try {
+    const userId = res.locals.user.id;
+    const tickets = await Ticket.findAll({
+      where: { user_id: userId },
+      include: [
+        {
+          model: Exhibition,
+          attributes: ['id', 'title', 'start_date', 'end_date', 'location']
+        }
+      ],
+      order: [['booking_date', 'DESC']]
+    });
+
+    res.render('tickets', {
+      title: 'Мои билеты',
+      user: res.locals.user,
+      tickets
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Получение билетов текущего пользователя
 exports.getMyTickets = async (req, res) => {
   try {
     const tickets = await Ticket.findAll({
       where: { user_id: req.user.id },
-      include: [{ model: Exhibition, attributes: ['id', 'title', 'start_date', 'end_date'] }]
+      include: [{ model: Exhibition, attributes: ['id', 'title', 'start_date', 'end_date', 'location'] }]
     });
     res.status(200).json({
       status: 'success',

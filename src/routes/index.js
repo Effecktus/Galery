@@ -37,4 +37,6 @@ router.get('/exhibitions', exhibitionController.renderExhibitionsPage);
 const artworkController = require('../controllers/artworkController');
 router.get('/artworks', artworkController.renderArtworksPage);
 
+const ticketController = require('../controllers/ticketController');
+router.get('/tickets', ticketController.renderUserTickets);
 module.exports = router;

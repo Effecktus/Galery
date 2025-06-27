@@ -168,6 +168,84 @@ exports.getAllTickets = async (req, res) => {
     });
   }
 };
+exports.updateTicketAdmin = async (req, res) => {
+  try {
+    // 1) убедиться, что это админ
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ status: 'error', message: 'Доступ запрещён' });
+    }
+
+    const ticketId = req.params.id;
+    const { user_id, exhibition_id, quantity } = req.body;
+
+    // 2) базовая валидация входных данных
+    if (!user_id || !exhibition_id || !quantity) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Необходимо указать пользователя, выставку и количество билетов'
+      });
+    }
+
+    // 3) найти существующий билет
+    const ticket = await Ticket.findByPk(ticketId);
+    if (!ticket) {
+      return res.status(404).json({ status: 'error', message: 'Билет не найден' });
+    }
+
+    // 4) проверить, что новый пользователь существует
+    const user = await User.findByPk(user_id);
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'Пользователь не найден' });
+    }
+
+    // 5) найти старую и новую выставки
+    const oldExhibition = await Exhibition.findByPk(ticket.exhibition_id);
+    const newExhibition = await Exhibition.findByPk(exhibition_id);
+    if (!newExhibition) {
+      return res.status(404).json({ status: 'error', message: 'Новая выставка не найдена' });
+    }
+    if (newExhibition.status !== 'active') {
+      return res.status(400).json({ status: 'error', message: 'Выставка недоступна для бронирования' });
+    }
+
+    // 6) скорректировать остатки билетов
+    const oldQty = ticket.quantity;
+    const newQty = parseInt(quantity, 10);
+
+    if (ticket.exhibition_id === exhibition_id) {
+      // если выставка та же, смотрим разницу
+      const diff = newQty - oldQty;
+      if (diff > 0 && newExhibition.remaining_tickets < diff) {
+        return res.status(400).json({ status: 'error', message: 'Недостаточно билетов на выставке' });
+      }
+      await newExhibition.update({ remaining_tickets: newExhibition.remaining_tickets - diff });
+    } else {
+      // возвращаем старые и списываем новые
+      if (oldExhibition) {
+        await oldExhibition.update({ remaining_tickets: oldExhibition.remaining_tickets + oldQty });
+      }
+      if (newExhibition.remaining_tickets < newQty) {
+        return res.status(400).json({ status: 'error', message: 'Недостаточно билетов на новой выставке' });
+      }
+      await newExhibition.update({ remaining_tickets: newExhibition.remaining_tickets - newQty });
+    }
+
+    // 7) пересчитать итоговую цену и сохранить изменения
+    const total_price = newExhibition.ticket_price * newQty;
+    await ticket.update({ user_id, exhibition_id, quantity: newQty, total_price });
+
+    res.status(200).json({ status: 'success', data: { ticket } });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Ошибка валидации данных',
+        errors: err.errors.map(e => ({ field: e.path, message: e.message }))
+      });
+    }
+    res.status(500).json({ status: 'error', message: 'Ошибка при обновлении билета: ' + err.message });
+  }
+};
 
 // Рендер страницы покупок пользователя
 exports.renderUserTickets = async (req, res, next) => {
@@ -209,6 +287,91 @@ exports.getMyTickets = async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Ошибка при получении билетов: ' + err.message
+    });
+  }
+};
+
+exports.createTicketAdmin = async (req, res) => {
+  try {
+    // Проверяем роль
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Доступ запрещён'
+      });
+    }
+
+    const { user_id, exhibition_id, quantity } = req.body;
+    // Базовая валидация
+    if (!user_id || !exhibition_id || !quantity) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Необходимо указать пользователя, выставку и количество билетов'
+      });
+    }
+
+    // Проверяем, что пользователь существует
+    const user = await User.findByPk(user_id);
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Пользователь не найден'
+      });
+    }
+
+    // Проверяем выставку
+    const exhibition = await Exhibition.findByPk(exhibition_id);
+    if (!exhibition) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Выставка не найдена'
+      });
+    }
+    if (exhibition.status !== 'active') {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Выставка недоступна для покупки билетов'
+      });
+    }
+    if (exhibition.remaining_tickets < quantity) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Недостаточно билетов'
+      });
+    }
+
+    // Подсчёт итоговой цены
+    const total_price = exhibition.ticket_price * quantity;
+
+    // Создаём запись о билете
+    const ticket = await Ticket.create({
+      user_id,
+      exhibition_id,
+      quantity,
+      booking_date: new Date(),
+      total_price
+    });
+
+    // Уменьшаем количество доступных билетов
+    await exhibition.update({
+      remaining_tickets: exhibition.remaining_tickets - quantity
+    });
+
+    return res.status(201).json({
+      status: 'success',
+      data: { ticket }
+    });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Ошибка валидации данных',
+        errors: err.errors.map(e => ({ field: e.path, message: e.message }))
+      });
+    }
+    return res.status(500).json({
+      status: 'error',
+      message: 'Ошибка при создании билета: ' + err.message
     });
   }
 };

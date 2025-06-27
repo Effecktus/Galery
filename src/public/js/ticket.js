@@ -73,13 +73,14 @@ $(document).ready(function () {
       showTicketErrors(errors, 'add');
       return;
     }
+    console.log("hi")
     const data = {
       user_id: $('#ticketUser').val(),
       exhibition_id: $('#ticketExhibition').val(),
       quantity: $('#ticketQuantity').val()
     };
     $.ajax({
-      url: '/api/v1/tickets',
+      url: '/api/v1/tickets/admin/tickets',
       method: 'POST',
       contentType: 'application/json',
       data: JSON.stringify(data),
@@ -366,9 +367,17 @@ function showTicketErrors(errors, prefix) {
 
 // Валидация формы билета
 function validateTicketForm(prefix) {
-  const user_id = $(`#${prefix}TicketUser`).val();
-  const exhibition_id = $(`#${prefix}TicketExhibition`).val();
-  const quantity = $(`#${prefix}TicketQuantity`).val();
+  const userSel = prefix === 'add' ? '#ticketUser' : `#${prefix}TicketUser`;
+  const exhibitionSel = prefix === 'add'
+      ? '#ticketExhibition'
+      : `#${prefix}TicketExhibition`;
+  const quantitySel = prefix === 'add'
+      ? '#ticketQuantity'
+      : `#${prefix}TicketQuantity`;
+
+  const user_id = $(userSel).val();
+  const exhibition_id = $(exhibitionSel).val();
+  const quantity = $(quantitySel).val();
   const errors = [];
   if (!user_id) {
     errors.push({ field: 'User', message: 'Выберите пользователя' });

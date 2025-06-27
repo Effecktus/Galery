@@ -358,15 +358,19 @@ exports.deleteExhibition = async (req, res) => {
       });
     }
 
+    // Удаляем все связи с картинами (junction-таблица exhibition_artwork)
+    await exhibition.setArtworks([]);
+
+    // Теперь можно удалить саму выставку
     await exhibition.destroy();
 
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
-      message: 'Выставка успешно удалена',
+      message: 'Выставка и связанные записи успешно удалены',
       data: null
     });
-  } catch(err) {
-    res.status(500).json({
+  } catch (err) {
+    return res.status(500).json({
       status: 'error',
       message: 'Ошибка при удалении выставки: ' + err.message
     });

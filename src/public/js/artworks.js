@@ -5,184 +5,235 @@ let artworkCurrentSort = {
 };
 
 $(document).ready(function () {
-    // Загрузка произведений при загрузке страницы
-    loadArtworks();
+    // Проверяем, на какой странице мы находимся
+    const isPublicPage = $('#artworks-list').length > 0;
+    const isAdminPage = $('#artworksTableBody').length > 0;
 
-    // Загрузка списков для выпадающих меню
-    loadAuthors();
-    loadStyles();
-    loadGenres();
+    if (isPublicPage) {
+        // Публичная страница картин
+        loadPublicArtworks();
 
-    // Переменная для хранения таймера
-    let searchTimer;
+        // Переменная для хранения таймера
+        let searchTimer;
 
-    // Обработчик поиска при вводе
-    $('#searchInput').on('input', function () {
-        const searchTerm = $(this).val();
+        // Обработчик поиска при вводе
+        $('#searchInput').on('input', function () {
+            const searchTerm = $(this).val();
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                loadPublicArtworks(searchTerm);
+            }, 300);
+        });
 
-        // Очищаем предыдущий таймер
-        clearTimeout(searchTimer);
+        // Обработчики фильтрации по году создания
+        $('#yearFrom, #yearTo').on('input', function() {
+            loadPublicArtworks();
+        });
 
-        // Устанавливаем новый таймер
-        searchTimer = setTimeout(() => {
-            loadArtworks(searchTerm);
-        }, 300); // Задержка 300мс
-    });
+        // Обработчик очистки фильтра по году
+        $('#clearYearFilter').on('click', function() {
+            $('#yearFrom').val('');
+            $('#yearTo').val('');
+            loadPublicArtworks();
+        });
 
-    // Обработчики фильтрации по году создания
-    $('#yearFrom, #yearTo').on('input', function() {
+        // Обработчик клика по миниатюре для просмотра
+        $(document).on('click', '.artwork-thumbnail', function() {
+            const imageUrl = $(this).data('full-image');
+            if (imageUrl) {
+                $('#lightbox-img').attr('src', imageUrl);
+                $('#image-lightbox').addClass('active');
+            }
+        });
+
+        // Закрытие lightbox
+        $('#image-lightbox').on('click', function(e) {
+            if ($(e.target).is('#image-lightbox')) {
+                $('#image-lightbox').removeClass('active');
+                $('#lightbox-img').attr('src', '');
+            }
+        });
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape') {
+                $('#image-lightbox').removeClass('active');
+                $('#lightbox-img').attr('src', '');
+            }
+        });
+    } else if (isAdminPage) {
+        // Админская страница картин
         loadArtworks();
-    });
+        loadAuthors();
+        loadStyles();
+        loadGenres();
 
-    // Обработчик очистки фильтра по году
-    $('#clearYearFilter').on('click', function() {
-        $('#yearFrom').val('');
-        $('#yearTo').val('');
-        loadArtworks();
-    });
+        let searchTimer;
 
-    // Обработчик клика по заголовкам таблицы
-    $('.sortable').on('click', function() {
-        const column = $(this).data('column');
+        $('#searchInput').on('input', function () {
+            const searchTerm = $(this).val();
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                loadArtworks(searchTerm);
+            }, 300);
+        });
 
-        if (artworkCurrentSort.column === column) {
-            artworkCurrentSort.direction = artworkCurrentSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            artworkCurrentSort.column = column;
-            artworkCurrentSort.direction = 'asc';
-        }
+        $('#yearFrom, #yearTo').on('input', function() {
+            loadArtworks();
+        });
 
-        loadArtworks($('#searchInput').val());
-    });
+        $('#clearYearFilter').on('click', function() {
+            $('#yearFrom').val('');
+            $('#yearTo').val('');
+            loadArtworks();
+        });
 
-    // Обработчик добавления произведения
-    $('#saveArtworkBtn').on('click', function () {
-        const errors = validateAddArtworkForm();
-        if (errors.length > 0) {
-            showErrors(errors);
-            return;
-        }
+        $('.sortable').on('click', function() {
+            const column = $(this).data('column');
+            if (artworkCurrentSort.column === column) {
+                artworkCurrentSort.direction = artworkCurrentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                artworkCurrentSort.column = column;
+                artworkCurrentSort.direction = 'asc';
+            }
+            loadArtworks($('#searchInput').val());
+        });
 
-        const formData = new FormData();
-        formData.append('title', $('#artworkTitle').val().trim());
-        formData.append('author_id', parseInt($('#artworkAuthor').val()));
-        formData.append('style_id', parseInt($('#artworkStyle').val()));
-        formData.append('genre_id', parseInt($('#artworkGenre').val()));
-        formData.append('creation_year', parseInt($('#artworkCreationYear').val()));
-        formData.append('width', parseFloat($('#artworkWidth').val()));
-        formData.append('height', parseFloat($('#artworkHeight').val()));
-        formData.append('description', $('#artworkDescription').val().trim());
+        $('#saveArtworkBtn').on('click', function () {
+            const errors = validateAddArtworkForm();
+            if (errors.length > 0) {
+                showErrors(errors);
+                return;
+            }
 
-        const imageFile = $('#artworkImage')[0].files[0];
-        if (imageFile) {
-            formData.append('image_path', imageFile);
-        }
+            const formData = new FormData();
+            formData.append('title', $('#artworkTitle').val().trim());
+            formData.append('author_id', parseInt($('#artworkAuthor').val()));
+            formData.append('style_id', parseInt($('#artworkStyle').val()));
+            formData.append('genre_id', parseInt($('#artworkGenre').val()));
+            formData.append('creation_year', parseInt($('#artworkCreationYear').val()));
+            formData.append('width', parseFloat($('#artworkWidth').val()));
+            formData.append('height', parseFloat($('#artworkHeight').val()));
+            formData.append('description', $('#artworkDescription').val().trim());
 
-        addArtwork(formData);
-    });
+            const imageFile = $('#artworkImage')[0].files[0];
+            if (imageFile) {
+                formData.append('image_path', imageFile);
+            }
 
-    // Обработчик обновления произведения
-    $('#updateArtworkBtn').on('click', function () {
-        const errors = validateEditArtworkForm();
-        if (errors.length > 0) {
-            showErrors(errors);
-            return;
-        }
+            addArtwork(formData);
+        });
 
-        const formData = new FormData();
-        const id = $('#editArtworkId').val();
+        $('#updateArtworkBtn').on('click', function () {
+            const errors = validateEditArtworkForm();
+            if (errors.length > 0) {
+                showErrors(errors);
+                return;
+            }
 
-        formData.append('title', $('#editArtworkTitle').val().trim());
-        formData.append('author_id', parseInt($('#editArtworkAuthor').val()));
-        formData.append('style_id', parseInt($('#editArtworkStyle').val()));
-        formData.append('genre_id', parseInt($('#editArtworkGenre').val()));
-        formData.append('creation_year', parseInt($('#editArtworkCreationYear').val()));
-        formData.append('width', parseFloat($('#editArtworkWidth').val()));
-        formData.append('height', parseFloat($('#editArtworkHeight').val()));
-        formData.append('description', $('#editArtworkDescription').val().trim());
+            const formData = new FormData();
+            const id = $('#editArtworkId').val();
 
-        const imageFile = $('#editArtworkImage')[0].files[0];
-        if (imageFile) {
-            formData.append('image_path', imageFile);
-        }
+            formData.append('title', $('#editArtworkTitle').val().trim());
+            formData.append('author_id', parseInt($('#editArtworkAuthor').val()));
+            formData.append('style_id', parseInt($('#editArtworkStyle').val()));
+            formData.append('genre_id', parseInt($('#editArtworkGenre').val()));
+            formData.append('creation_year', parseInt($('#editArtworkCreationYear').val()));
+            formData.append('width', parseFloat($('#editArtworkWidth').val()));
+            formData.append('height', parseFloat($('#editArtworkHeight').val()));
+            formData.append('description', $('#editArtworkDescription').val().trim());
 
-        updateArtwork(id, formData);
-    });
+            const imageFile = $('#editArtworkImage')[0].files[0];
+            if (imageFile) {
+                formData.append('image_path', imageFile);
+            }
 
-    // Обработчик удаления произведения
-    $('#confirmDeleteBtn').on('click', function () {
-        const id = $(this).data('artworkId');
-        if (id) {
-            deleteArtwork(id);
-        }
-    });
+            updateArtwork(id, formData);
+        });
 
-    // Обработчик предпросмотра изображения при загрузке
-    $('#artworkImage, #editArtworkImage').on('change', function() {
-        const formGroup = $(this).closest('.form-group');
-        let previewElement = formGroup.find('.image-preview');
+        $('#confirmDeleteBtn').on('click', function () {
+            const id = $(this).data('artworkId');
+            if (id) {
+                deleteArtwork(id);
+            }
+        });
 
-        if (previewElement.length === 0) {
-            previewElement = $('<div class="image-preview"></div>');
-            formGroup.append(previewElement);
-        }
+        $('#artworkImage, #editArtworkImage').on('change', function() {
+            const formGroup = $(this).closest('.form-group');
+            let previewElement = formGroup.find('.image-preview');
 
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                previewElement.html(`<img src="${e.target.result}" alt="Preview" style="max-width: 100%;">`);
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+            if (previewElement.length === 0) {
+                previewElement = $('<div class="image-preview"></div>');
+                formGroup.append(previewElement);
+            }
 
-    // Обработчик клика по миниатюре для просмотра
-    $(document).on('click', '.artwork-thumbnail', function() {
-        const imageUrl = $(this).data('full-image');
-        $('#previewImage').attr('src', imageUrl);
-        $('#imagePreviewModal').addClass('active');
-    });
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewElement.html(`<img src="${e.target.result}" alt="Preview" style="max-width: 100%;">`);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
 
-    // Закрытие предпросмотра изображения (только по клику вне изображения и по Esc)
-    $('#imagePreviewModal').on('click', function(e) {
-        if ($(e.target).is('#imagePreviewModal')) {
-            $('#imagePreviewModal').removeClass('active');
-            $('#previewImage').attr('src', '');
-            $('body').removeClass('modal-open');
-        }
-    });
-    $(document).on('keydown', function(e) {
-        if (e.key === 'Escape') {
-            $('#imagePreviewModal').removeClass('active');
-            $('#previewImage').attr('src', '');
-            $('body').removeClass('modal-open');
-        }
-    });
+        $(document).on('click', '.artwork-thumbnail', function() {
+            const imageUrl = $(this).data('full-image');
+            $('#previewImage').attr('src', imageUrl);
+            $('#imagePreviewModal').addClass('active');
+        });
 
-    // Добавляем очистку ошибок при открытии модальных окон
-    $('[data-modal="addArtworkModal"]').on('click', function() {
-        clearErrors();
-    });
+        $('#imagePreviewModal').on('click', function(e) {
+            if ($(e.target).is('#imagePreviewModal')) {
+                $('#imagePreviewModal').removeClass('active');
+                $('#previewImage').attr('src', '');
+                $('body').removeClass('modal-open');
+            }
+        });
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape') {
+                $('#imagePreviewModal').removeClass('active');
+                $('#previewImage').attr('src', '');
+                $('body').removeClass('modal-open');
+            }
+        });
 
-    // Загрузка публичного списка произведений (если есть)
-    loadPublicArtworks();
+        $('[data-modal="addArtworkModal"]').on('click', function() {
+            clearErrors();
+        });
+    }
 });
 
 // Функция загрузки публичного списка произведений
-function loadPublicArtworks() {
+function loadPublicArtworks(searchTerm = "") {
     const $list = $('#artworks-list');
     const $noMsg = $('#no-artworks-message');
     
     if (!$list.length) return;
 
+    // Получаем значения фильтров по году
+    const yearFrom = $('#yearFrom').val();
+    const yearTo = $('#yearTo').val();
+
+    // Формируем параметры запроса
+    const params = new URLSearchParams();
+    if (searchTerm) {
+        params.append('search', searchTerm.trim());
+    }
+    if (yearFrom) {
+        params.append('year_from', yearFrom);
+    }
+    if (yearTo) {
+        params.append('year_to', yearTo);
+    }
+
+    const queryString = params.toString();
+    const url = `/api/v1/artworks${queryString ? `?${queryString}` : ""}`;
+
     $list.html('<div style="grid-column:1/-1;text-align:center;padding:2rem;">Загрузка...</div>');
     $list.css('display', 'grid');
     if ($noMsg.length) $noMsg.hide();
 
-    // 1) Сначала получаем все картины
     $.ajax({
-        url: '/api/v1/artworks',
+        url: url,
         method: 'GET',
         success: function(artJson) {
             const artworks = (artJson.status === 'success' && Array.isArray(artJson.data.artworks))
@@ -195,7 +246,6 @@ function loadPublicArtworks() {
                 return;
             }
 
-            // 2) Параллельно для каждой картины запрашиваем её выставки
             const exhibitionsPromises = artworks.map(function(a) {
                 return $.ajax({
                     url: `/api/v1/artworks/${a.id}/exhibitions`,
@@ -207,7 +257,6 @@ function loadPublicArtworks() {
                 });
             });
 
-            // 3) Когда все запросы завершатся — рендерим карточки
             $.when.apply($, exhibitionsPromises)
                 .then(function() {
                     const allExhibitions = Array.prototype.slice.call(arguments);
@@ -223,7 +272,6 @@ function loadPublicArtworks() {
                             justifyContent: 'space-between'
                         });
 
-                        // HTML для списка выставок (если их несколько — разделяем запятыми)
                         const exhibitions = allExhibitions[idx];
                         const exhibitionsHTML = exhibitions.length
                             ? exhibitions
@@ -233,20 +281,24 @@ function loadPublicArtworks() {
                                 .join(', ')
                             : '—';
 
+                        const imagePath = a.image_path ? a.image_path.split('/').pop() : null;
+                        const imageUrl = imagePath ? `/media/${imagePath}` : null;
+
                         const cardHTML = `
                             <div class="card-header" style="padding:1rem;">
                                 <h4 class="text-lg font-semibold">${a.title}</h4>
                             </div>
-                            ${a.image_path
-                                ? `<img src="${a.image_path}"
-                                    class="artwork-image"
-                                    style="width:100%; height:180px; object-fit:cover;"
-                                    alt="${a.title}">`
-                                : ''}
+                            ${imageUrl
+                                ? `<img src="${imageUrl}"
+                                    class="artwork-image artwork-thumbnail"
+                                    style="width:100%; height:180px; object-fit:cover; cursor:pointer;"
+                                    alt="${a.title}"
+                                    data-full-image="${imageUrl}">`
+                                : '<div style="width:100%; height:180px; background-color:#f0f0f0; display:flex; align-items:center; justify-content:center; color:#666;">Нет изображения</div>'}
                             <div class="card-body" style="padding:1rem; flex-grow:1;">
                                 <p><strong>ID:</strong> ${a.id}</p>
-                                <p><strong>Размеры:</strong> ${a.width} × ${a.height} см</p>
-                                <p><strong>Год создания:</strong> ${a.creation_year}</p>
+                                <p><strong>Размеры:</strong> ${a.width && a.height ? `${a.width} × ${a.height} см` : '—'}</p>
+                                <p><strong>Год создания:</strong> ${a.creation_year || '—'}</p>
                                 <p><strong>Автор:</strong> ${a.Author.surname} ${a.Author.first_name} ${a.Author.patronymic !== "null" ? a.Author.patronymic : ''}</p>
                                 <p><strong>Стиль:</strong> ${a.Style.name}</p>
                                 <p><strong>Жанр:</strong> ${a.Genre.name}</p>
@@ -355,9 +407,8 @@ function loadArtworks(searchTerm = "") {
                 });
 
                 artworks.forEach(function(artwork) {
-                    // Преобразуем путь к изображению
-                    const imagePath = artwork.image_path.split('/').pop(); // Получаем только имя файла
-                    const imageUrl = `/media/${imagePath}`; // Путь относительно public
+                    const imagePath = artwork.image_path ? artwork.image_path.split('/').pop() : null;
+                    const imageUrl = imagePath ? `/media/${imagePath}` : '/media/no-image.jpg';
 
                     const row = `
                         <tr>
@@ -665,14 +716,10 @@ function editArtwork(id) {
                 $('#editArtworkHeight').val(artwork.height);
                 $('#editArtworkDescription').val(artwork.description);
 
-                // Преобразуем путь к изображению
-                const imagePath = artwork.image_path.split('/').pop();
-                const imageUrl = `/media/${imagePath}`;
+                const imagePath = artwork.image_path ? artwork.image_path.split('/').pop() : null;
+                const imageUrl = imagePath ? `/media/${imagePath}` : '/media/no-image.jpg';
 
-                // Отображаем текущее изображение
-                const previewHtml = `
-                    <img src="${imageUrl}" alt="${artwork.title}" style="max-width: 100%;">
-                `;
+                const previewHtml = `<img src="${imageUrl}" alt="${artwork.title}" style="max-width: 100%;">`;
                 $('#currentImagePreview').html(previewHtml);
 
                 $('#editArtworkModal').addClass('active');

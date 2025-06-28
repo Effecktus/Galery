@@ -19,7 +19,7 @@ exports.createTicket = async (req, res) => {
         message: 'Выставка не найдена'
       });
     }
-    if (exhibition.status !== 'active') {
+    if (exhibition.status === 'completed') {
       return res.status(400).json({
         status: 'error',
         message: 'Выставка недоступна для покупки билетов'
@@ -168,6 +168,7 @@ exports.getAllTickets = async (req, res) => {
     });
   }
 };
+
 exports.updateTicketAdmin = async (req, res) => {
   try {
     // 1) убедиться, что это админ
@@ -327,7 +328,7 @@ exports.createTicketAdmin = async (req, res) => {
         message: 'Выставка не найдена'
       });
     }
-    if (exhibition.status !== 'active') {
+    if (exhibition.status === 'completed') {
       return res.status(400).json({
         status: 'error',
         message: 'Выставка недоступна для покупки билетов'

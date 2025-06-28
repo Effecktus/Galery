@@ -7,7 +7,7 @@
   </div>
 
   <!-- Поиск и фильтрация -->
-  <div class="search-filter-section">
+  <div class="search-filter-section centered-search">
     <!-- Поисковая строка -->
     <div class="search-section">
       <div class="search-container">
@@ -21,30 +21,33 @@
       </div>
     </div>
 
-    <!-- Фильтрация по дате -->
-    <div class="filter-section">
-      <div class="filter-container">
-        <div class="filter-group">
-          <label for="dateFrom">Период жизни от:</label>
-          <input
-            type="date"
-            id="dateFrom"
-            class="filter-input"
-            aria-label="Дата начала периода"
-          />
+    <!-- Фильтры на одной строке -->
+    <div class="filters-row">
+      <!-- Фильтрация по дате -->
+      <div class="filter-section">
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="dateFrom">Период жизни от:</label>
+            <input
+              type="date"
+              id="dateFrom"
+              class="filter-input"
+              aria-label="Дата начала периода"
+            />
+          </div>
+          <div class="filter-group">
+            <label for="dateTo">до:</label>
+            <input
+              type="date"
+              id="dateTo"
+              class="filter-input"
+              aria-label="Дата окончания периода"
+            />
+          </div>
+          <button type="button" class="btn btn-secondary" id="clearDateFilter">
+            <i class="fas fa-times"></i>Очистить
+          </button>
         </div>
-        <div class="filter-group">
-          <label for="dateTo">до:</label>
-          <input
-            type="date"
-            id="dateTo"
-            class="filter-input"
-            aria-label="Дата окончания периода"
-          />
-        </div>
-        <button type="button" class="btn btn-secondary" id="clearDateFilter">
-          <i class="fas fa-times"></i>Очистить
-        </button>
       </div>
     </div>
   </div>

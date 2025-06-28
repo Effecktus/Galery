@@ -7,7 +7,7 @@
   </div>
 
   <!-- Поиск и фильтры -->
-  <div class="search-filter-section">
+  <div class="search-filter-section centered-search">
     <!-- Поисковая строка -->
     <div class="search-section">
       <div class="search-container">
@@ -21,67 +21,70 @@
       </div>
     </div>
 
-    <!-- Фильтрация по дате бронирования -->
-    <div class="filter-section">
-      <div class="filter-container">
-        <div class="filter-group">
-          <label for="bookingDateFrom">Дата бронирования от:</label>
-          <input
-            type="date"
-            id="bookingDateFrom"
-            class="filter-input"
-            aria-label="Дата начала периода бронирования"
-          />
+    <!-- Фильтры на одной строке -->
+    <div class="filters-row">
+      <!-- Фильтрация по дате бронирования -->
+      <div class="filter-section">
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="bookingDateFrom">Дата бронирования от:</label>
+            <input
+              type="date"
+              id="bookingDateFrom"
+              class="filter-input"
+              aria-label="Дата начала периода бронирования"
+            />
+          </div>
+          <div class="filter-group">
+            <label for="bookingDateTo">до:</label>
+            <input
+              type="date"
+              id="bookingDateTo"
+              class="filter-input"
+              aria-label="Дата окончания периода бронирования"
+            />
+          </div>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="clearBookingDateFilter"
+          >
+            <i class="fas fa-times"></i>Очистить
+          </button>
         </div>
-        <div class="filter-group">
-          <label for="bookingDateTo">до:</label>
-          <input
-            type="date"
-            id="bookingDateTo"
-            class="filter-input"
-            aria-label="Дата окончания периода бронирования"
-          />
-        </div>
-        <button
-          type="button"
-          class="btn btn-secondary"
-          id="clearBookingDateFilter"
-        >
-          <i class="fas fa-times"></i>Очистить
-        </button>
       </div>
-    </div>
 
-    <!-- Фильтрация по цене -->
-    <div class="filter-section">
-      <div class="filter-container">
-        <div class="filter-group">
-          <label for="priceFrom">Цена от:</label>
-          <input
-            type="number"
-            id="priceFrom"
-            class="filter-input"
-            min="0"
-            step="0.01"
-            placeholder="₽"
-            aria-label="Минимальная цена"
-          />
+      <!-- Фильтрация по цене -->
+      <div class="filter-section">
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="priceFrom">Цена от:</label>
+            <input
+              type="number"
+              id="priceFrom"
+              class="filter-input"
+              min="0"
+              step="0.01"
+              placeholder="₽"
+              aria-label="Минимальная цена"
+            />
+          </div>
+          <div class="filter-group">
+            <label for="priceTo">до:</label>
+            <input
+              type="number"
+              id="priceTo"
+              class="filter-input"
+              min="0"
+              step="0.01"
+              placeholder="₽"
+              aria-label="Максимальная цена"
+            />
+          </div>
+          <button type="button" class="btn btn-secondary" id="clearPriceFilter">
+            <i class="fas fa-times"></i>Очистить
+          </button>
         </div>
-        <div class="filter-group">
-          <label for="priceTo">до:</label>
-          <input
-            type="number"
-            id="priceTo"
-            class="filter-input"
-            min="0"
-            step="0.01"
-            placeholder="₽"
-            aria-label="Максимальная цена"
-          />
-        </div>
-        <button type="button" class="btn btn-secondary" id="clearPriceFilter">
-          <i class="fas fa-times"></i>Очистить
-        </button>
       </div>
     </div>
   </div>

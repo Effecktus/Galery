@@ -656,6 +656,18 @@ main {
     margin-bottom: 1.5rem;
 }
 
+/* Новые стили для центрированной поисковой строки */
+.search-section.centered {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.search-section.centered .search-container {
+    max-width: 500px;
+    width: 100%;
+}
+
 .search-container {
     max-width: 400px;
 }
@@ -767,6 +779,53 @@ main {
     gap: 3rem;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
+}
+
+/* Новые стили для страниц с фильтрами */
+.search-filter-section.centered-search {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+}
+
+.search-filter-section.centered-search .search-section {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0;
+    flex: none;
+}
+
+.search-filter-section.centered-search .search-container {
+    max-width: 500px;
+    width: 100%;
+}
+
+.search-filter-section.centered-search .filter-section {
+    margin-bottom: 0;
+    flex: none;
+}
+
+/* Стили для размещения фильтров на одной строке */
+.filters-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.filters-row .filter-section {
+    flex: 1;
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.filters-row .filter-container {
+    justify-content: center;
+}
+
+.filters-row .filter-group {
+    flex: 1;
+    min-width: 120px;
 }
 
 .search-filter-section .search-section {
@@ -1016,6 +1075,31 @@ main {
         min-width: auto;
     }
     
+    .search-filter-section.centered-search {
+        gap: 1rem;
+    }
+    
+    .search-filter-section.centered-search .search-section {
+        justify-content: center;
+    }
+    
+    .search-filter-section.centered-search .search-container {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+    
+    /* Адаптивные стили для фильтров на одной строке */
+    .filters-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .filters-row .filter-section {
+        min-width: auto;
+        max-width: none;
+    }
+    
     .filter-container {
         flex-direction: column;
         align-items: stretch;
@@ -1042,6 +1126,12 @@ main {
     
     .status-filter-section .filter-group {
         max-width: none;
+    }
+    
+    /* Адаптивные стили для центрированной поисковой строки */
+    .search-section.centered .search-container {
+        max-width: 100%;
+        padding: 0 1rem;
     }
 }
 
@@ -1088,4 +1178,42 @@ main {
     .exhibition-poster-col img {
         margin: 0 auto;
     }
+}
+
+/* Стили для главной страницы */
+.page-title {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.exhibitions-list {
+    margin-top: 2rem;
+}
+
+.no-exhibitions-message {
+    display: none;
+    text-align: center;
+    color: #888;
+    margin-top: 2rem;
+    font-size: 1.2rem;
+}
+
+/* Стили для lightbox */
+.image-lightbox {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.lightbox-img {
+    max-width: 90%;
+    max-height: 90%;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
 } 

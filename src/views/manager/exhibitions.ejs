@@ -11,24 +11,7 @@
   </div>
 
   <!-- Поиск и фильтрация -->
-  <!-- Фильтрация по статусу (первая строка) -->
-  <div class="filter-section status-filter-section">
-    <div class="filter-container">
-      <div class="filter-group">
-        <label for="statusFilter">Статус:</label>
-        <select id="statusFilter" class="filter-input" multiple>
-          <option value="upcoming">Запланирована</option>
-          <option value="active">Активная</option>
-          <option value="completed">Завершена</option>
-        </select>
-      </div>
-      <button type="button" class="btn btn-secondary" id="clearStatusFilter">
-        <i class="fas fa-times"></i>Очистить
-      </button>
-    </div>
-  </div>
-
-  <div class="search-filter-section">
+  <div class="search-filter-section centered-search">
     <!-- Поисковая строка -->
     <div class="search-section">
       <div class="search-container">
@@ -42,63 +25,87 @@
       </div>
     </div>
 
-    <!-- Фильтрация по периоду проведения -->
-    <div class="filter-section">
-      <div class="filter-container">
-        <div class="filter-group">
-          <label for="dateFrom">Период проведения от:</label>
-          <input
-            type="date"
-            id="dateFrom"
-            class="filter-input"
-            aria-label="Дата начала периода"
-          />
+    <!-- Фильтры на одной строке -->
+    <div class="filters-row">
+      <!-- Фильтрация по статусу -->
+      <div class="filter-section">
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="statusFilter">Статус:</label>
+            <select id="statusFilter" class="filter-input" multiple>
+              <option value="upcoming">Запланирована</option>
+              <option value="active">Активная</option>
+              <option value="completed">Завершена</option>
+            </select>
+          </div>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            id="clearStatusFilter"
+          >
+            <i class="fas fa-times"></i>Очистить
+          </button>
         </div>
-        <div class="filter-group">
-          <label for="dateTo">до:</label>
-          <input
-            type="date"
-            id="dateTo"
-            class="filter-input"
-            aria-label="Дата окончания периода"
-          />
-        </div>
-        <button type="button" class="btn btn-secondary" id="clearDateFilter">
-          <i class="fas fa-times"></i>Очистить
-        </button>
       </div>
-    </div>
 
-    <!-- Фильтрация по цене билета -->
-    <div class="filter-section">
-      <div class="filter-container">
-        <div class="filter-group">
-          <label for="priceFrom">Цена билета от:</label>
-          <input
-            type="number"
-            id="priceFrom"
-            class="filter-input"
-            min="0"
-            step="0.01"
-            placeholder="₽"
-            aria-label="Минимальная цена"
-          />
+      <!-- Фильтрация по периоду проведения -->
+      <div class="filter-section">
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="dateFrom">Период проведения от:</label>
+            <input
+              type="date"
+              id="dateFrom"
+              class="filter-input"
+              aria-label="Дата начала периода"
+            />
+          </div>
+          <div class="filter-group">
+            <label for="dateTo">до:</label>
+            <input
+              type="date"
+              id="dateTo"
+              class="filter-input"
+              aria-label="Дата окончания периода"
+            />
+          </div>
+          <button type="button" class="btn btn-secondary" id="clearDateFilter">
+            <i class="fas fa-times"></i>Очистить
+          </button>
         </div>
-        <div class="filter-group">
-          <label for="priceTo">до:</label>
-          <input
-            type="number"
-            id="priceTo"
-            class="filter-input"
-            min="0"
-            step="0.01"
-            placeholder="₽"
-            aria-label="Максимальная цена"
-          />
+      </div>
+
+      <!-- Фильтрация по цене билета -->
+      <div class="filter-section">
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="priceFrom">Цена билета от:</label>
+            <input
+              type="number"
+              id="priceFrom"
+              class="filter-input"
+              min="0"
+              step="0.01"
+              placeholder="₽"
+              aria-label="Минимальная цена"
+            />
+          </div>
+          <div class="filter-group">
+            <label for="priceTo">до:</label>
+            <input
+              type="number"
+              id="priceTo"
+              class="filter-input"
+              min="0"
+              step="0.01"
+              placeholder="₽"
+              aria-label="Максимальная цена"
+            />
+          </div>
+          <button type="button" class="btn btn-secondary" id="clearPriceFilter">
+            <i class="fas fa-times"></i>Очистить
+          </button>
         </div>
-        <button type="button" class="btn btn-secondary" id="clearPriceFilter">
-          <i class="fas fa-times"></i>Очистить
-        </button>
       </div>
     </div>
   </div>
@@ -264,11 +271,19 @@
             id="exhibitionArtworksCheckboxes"
             class="artworks-checkbox-list"
           ></div>
-          <div class="error-message" id="exhibitionArtworksCheckboxesError"></div>
+          <div
+            class="error-message"
+            id="exhibitionArtworksCheckboxesError"
+          ></div>
         </div>
         <div class="form-group">
           <label for="exhibitionPoster">Афиша (изображение)</label>
-          <input type="file" id="exhibitionPoster" name="poster"  accept="image/*" />
+          <input
+            type="file"
+            id="exhibitionPoster"
+            name="poster"
+            accept="image/*"
+          />
           <div class="image-preview" id="addPosterPreview"></div>
           <div class="error-message" id="exhibitionPosterError"></div>
         </div>
@@ -382,7 +397,10 @@
             id="editExhibitionArtworksCheckboxes"
             class="artworks-checkbox-list"
           ></div>
-          <div class="error-message" id="editexhibitionArtworksCheckboxesError"></div>
+          <div
+            class="error-message"
+            id="editexhibitionArtworksCheckboxesError"
+          ></div>
         </div>
         <div class="form-group">
           <label for="editExhibitionPoster">Афиша (изображение)</label>

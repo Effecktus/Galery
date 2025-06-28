@@ -1,109 +1,109 @@
 <!-- Main content -->
 <main class="main-content">
   <div class="content-container">
-    <h1 style="text-align: center; margin-bottom: 2rem">Актуальные выставки</h1>
+    <h1 class="page-title">Актуальные выставки</h1>
     <form
       id="exhibition-filter-form"
-      class="search-filter-section"
+      class="search-filter-section centered-search"
       autocomplete="off"
     >
-      <div class="search-section" style="margin-bottom: 1.5rem">
-        <input
-          type="text"
-          name="search"
-          id="search"
-          class="search-input"
-          placeholder="Поиск по названию или месту проведения..."
-        />
+      <!-- Поисковая строка -->
+      <div class="search-section">
+        <div class="search-container">
+          <input
+            type="text"
+            name="search"
+            id="search"
+            class="search-input"
+            placeholder="Поиск по названию или месту проведения..."
+          />
+        </div>
       </div>
-      <div class="filter-section" style="margin-bottom: 0">
-        <div class="filter-container">
-          <div class="filter-group">
-            <label for="start_date">Дата с</label>
-            <input
-              type="date"
-              name="start_date"
-              id="start_date"
-              class="filter-input"
-            />
+
+      <!-- Фильтры на одной строке -->
+      <div class="filters-row">
+        <!-- Фильтр по датам -->
+        <div class="filter-section">
+          <div class="filter-container">
+            <div class="filter-group">
+              <label for="start_date">Дата с</label>
+              <input
+                type="date"
+                name="start_date"
+                id="start_date"
+                class="filter-input"
+              />
+            </div>
+            <div class="filter-group">
+              <label for="end_date">Дата по</label>
+              <input
+                type="date"
+                name="end_date"
+                id="end_date"
+                class="filter-input"
+              />
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="clearDateFilter"
+            >
+              <i class="fas fa-times"></i>Очистить
+            </button>
           </div>
-          <div class="filter-group">
-            <label for="end_date">Дата по</label>
-            <input
-              type="date"
-              name="end_date"
-              id="end_date"
-              class="filter-input"
-            />
+        </div>
+
+        <!-- Фильтр по цене -->
+        <div class="filter-section">
+          <div class="filter-container">
+            <div class="filter-group">
+              <label for="min_price">Цена от</label>
+              <input
+                type="number"
+                name="min_price"
+                id="min_price"
+                class="filter-input"
+                min="0"
+                step="1"
+                placeholder="0"
+              />
+            </div>
+            <div class="filter-group">
+              <label for="max_price">Цена до</label>
+              <input
+                type="number"
+                name="max_price"
+                id="max_price"
+                class="filter-input"
+                min="0"
+                step="1"
+                placeholder="∞"
+              />
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="clearPriceFilter"
+            >
+              <i class="fas fa-times"></i>Очистить
+            </button>
           </div>
-          <div class="filter-group">
-            <label for="min_price">Цена от</label>
-            <input
-              type="number"
-              name="min_price"
-              id="min_price"
-              class="filter-input"
-              min="0"
-              step="1"
-              placeholder="0"
-            />
-          </div>
-          <div class="filter-group">
-            <label for="max_price">Цена до</label>
-            <input
-              type="number"
-              name="max_price"
-              id="max_price"
-              class="filter-input"
-              min="0"
-              step="1"
-              placeholder="∞"
-            />
-          </div>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            style="align-self: end; margin-top: 1.5rem"
-          >
-            Найти
-          </button>
         </div>
       </div>
     </form>
-    <div
-      id="exhibitions-list"
-      class="grid grid-3"
-      style="margin-top: 2rem"
-    ></div>
-    <div
-      id="no-exhibitions-message"
-      style="
-        display: none;
-        text-align: center;
-        color: #888;
-        margin-top: 2rem;
-        font-size: 1.2rem;
-      "
-    >
+    <div id="exhibitions-list" class="grid grid-3 exhibitions-list"></div>
+    <div id="no-exhibitions-message" class="no-exhibitions-message">
       Нет выставок по выбранным критериям.
     </div>
   </div>
 </main>
 
-
-<div id="image-lightbox" style="
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.8);
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-">
-    <img id="lightbox-img" src="" alt="Увеличенное изображение" style="
-    max-width: 90%;
-    max-height: 90%;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  ">
-  </div>
+<div id="image-lightbox" class="image-lightbox">
+  <img
+    id="lightbox-img"
+    src=""
+    alt="Увеличенное изображение"
+    class="lightbox-img"
+  />
+</div>
 <script src="/js/main.js"></script>

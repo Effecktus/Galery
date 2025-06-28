@@ -7,7 +7,7 @@
   </div>
 
   <!-- Поиск и фильтрация -->
-  <div class="search-filter-section">
+  <div class="search-filter-section centered-search">
     <!-- Поисковая строка -->
     <div class="search-section">
       <div class="search-container">
@@ -21,36 +21,39 @@
       </div>
     </div>
 
-    <!-- Фильтрация по году создания -->
-    <div class="filter-section">
-      <div class="filter-container">
-        <div class="filter-group">
-          <label for="yearFrom">Год создания от:</label>
-          <input
-            type="number"
-            id="yearFrom"
-            class="filter-input"
-            min="0"
-            max="<%= new Date().getFullYear() %>"
-            placeholder="Год"
-            aria-label="Год начала периода"
-          />
+    <!-- Фильтры на одной строке -->
+    <div class="filters-row">
+      <!-- Фильтрация по году создания -->
+      <div class="filter-section">
+        <div class="filter-container">
+          <div class="filter-group">
+            <label for="yearFrom">Год создания от:</label>
+            <input
+              type="number"
+              id="yearFrom"
+              class="filter-input"
+              min="0"
+              max="<%= new Date().getFullYear() %>"
+              placeholder="Год"
+              aria-label="Год начала периода"
+            />
+          </div>
+          <div class="filter-group">
+            <label for="yearTo">до:</label>
+            <input
+              type="number"
+              id="yearTo"
+              class="filter-input"
+              min="0"
+              max="<%= new Date().getFullYear() %>"
+              placeholder="Год"
+              aria-label="Год окончания периода"
+            />
+          </div>
+          <button type="button" class="btn btn-secondary" id="clearYearFilter">
+            <i class="fas fa-times"></i>Очистить
+          </button>
         </div>
-        <div class="filter-group">
-          <label for="yearTo">до:</label>
-          <input
-            type="number"
-            id="yearTo"
-            class="filter-input"
-            min="0"
-            max="<%= new Date().getFullYear() %>"
-            placeholder="Год"
-            aria-label="Год окончания периода"
-          />
-        </div>
-        <button type="button" class="btn btn-secondary" id="clearYearFilter">
-          <i class="fas fa-times"></i>Очистить
-        </button>
       </div>
     </div>
   </div>

@@ -210,6 +210,19 @@ document.addEventListener('DOMContentLoaded', function () {
     fetchExhibitions(getFilterParams());
   });
 
+  // Обработчики кнопок очистки фильтров
+  $('#clearDateFilter').on('click', function() {
+    $('#start_date').val('');
+    $('#end_date').val('');
+    fetchExhibitions(getFilterParams());
+  });
+
+  $('#clearPriceFilter').on('click', function() {
+    $('#min_price').val('');
+    $('#max_price').val('');
+    fetchExhibitions(getFilterParams());
+  });
+
   // Первая загрузка
   fetchExhibitions();
 });

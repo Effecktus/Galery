@@ -9,159 +9,130 @@ document.addEventListener('DOMContentLoaded', function () {
     const noMsg = document.getElementById('no-artworks-message');
     if (!list) return;
 
-    // Функция загрузки картин с фильтрами
-    function loadArtworksWithFilters() {
-        const searchTerm = document.getElementById('searchInput')?.value || '';
-        const yearFrom = document.getElementById('yearFrom')?.value || '';
-        const yearTo = document.getElementById('yearTo')?.value || '';
+    list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;">Загрузка...</div>';
+    list.style.display = 'grid';
+    if (noMsg) noMsg.style.display = 'none';
 
-        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;">Загрузка...</div>';
-        list.style.display = 'grid';
-        if (noMsg) noMsg.style.display = 'none';
+    // 1) Сначала получаем все картины
+    fetch('/api/v1/artworks')
+        .then(res => res.json())
+        .then(artJson => {
+            const artworks = (artJson.status === 'success' && Array.isArray(artJson.data.artworks))
+                ? artJson.data.artworks
+                : [];
 
-        // Формируем параметры запроса
-        const params = new URLSearchParams();
-        if (searchTerm.trim()) {
-            params.append('search', searchTerm.trim());
-        }
-        if (yearFrom) {
-            params.append('year_from', yearFrom);
-        }
-        if (yearTo) {
-            params.append('year_to', yearTo);
-        }
-
-        const queryString = params.toString();
-        const url = `/api/v1/artworks${queryString ? `?${queryString}` : ""}`;
-
-        // 1) Сначала получаем все картины с фильтрами
-        fetch(url)
-            .then(res => res.json())
-            .then(artJson => {
-                const artworks = (artJson.status === 'success' && Array.isArray(artJson.data.artworks))
-                    ? artJson.data.artworks
-                    : [];
-
-                if (!artworks.length) {
-                    list.style.display = 'none';
-                    if (noMsg) noMsg.style.display = 'block';
-                    return;
-                }
-
-                // 2) Параллельно для каждой картины запрашиваем её выставки
-                const exhibitionsPromises = artworks.map(a =>
-                    fetch(`/api/v1/artworks/${a.id}/exhibitions`)
-                        .then(r => r.json())
-                        .then(json => (json.status === 'success' && Array.isArray(json.data.exhibitions))
-                            ? json.data.exhibitions
-                            : []
-                        )
-                );
-
-                // 3) Когда все запросы завершатся — рендерим карточки
-                Promise.all(exhibitionsPromises)
-                    .then(allExhibitions => {
-                        list.innerHTML = '';
-                        list.style.display = 'grid';
-                        if (noMsg) noMsg.style.display = 'none';
-
-                        artworks.forEach((a, idx) => {
-                            const card = document.createElement('div');
-                            card.className = 'card';
-                            card.style.display = 'flex';
-                            card.style.flexDirection = 'column';
-                            card.style.justifyContent = 'space-between';
-
-                            // HTML для списка выставок (если их несколько — разделяем запятыми)
-                            const exhibitions = allExhibitions[idx];
-                            const exhibitionsHTML = exhibitions.length
-                                ? exhibitions
-                                    .map(e => `<a href="/exhibitions/${e.id}/page" class="text-blue-600 hover:underline">${e.title}</a>`)
-                                    .join(', ')
-                                : '—';
-
-                            card.innerHTML = `
-                  <div class="card-header">
-                    <h4>${a.title}</h4>
-                  </div>
-                  ${a.image_path
-                                    ? `<img src="${a.image_path}"
-                            class="artwork-image"
-                            style="width:100%; height:180px; object-fit:cover;"
-                            alt="${a.title}"
-                            onclick="openImageLightbox('${a.image_path}', '${a.title}')">`
-                                    : ''}
-                  <div class="card-body">
-                    <p><strong>Размеры:</strong> ${a.width} × ${a.height} см</p>
-                    <p><strong>Год создания:</strong> ${a.creation_year}</p>
-                    <p><strong>Автор:</strong> ${a.Author.surname} ${a.Author.first_name} ${a.Author.patronymic !== "null" ? a.Author.patronymic : ''}</p>
-                    <p><strong>Стиль:</strong> ${a.Style.name}</p>
-                    <p><strong>Жанр:</strong> ${a.Genre.name}</p>
-                    <p><strong>Описание:</strong> ${a.description || '—'}</p>
-                    <p>
-                      <strong>Выставки:</strong> ${exhibitionsHTML}
-                    </p>
-                  </div>
-                `;
-                            list.appendChild(card);
-                        });
-                    })
-                    .catch(err => {
-                        console.error('Ошибка при загрузке выставок для картин:', err);
-                        list.style.display = 'none';
-                        if (noMsg) noMsg.style.display = 'block';
-                    });
-            })
-            .catch(err => {
-                console.error('Ошибка при загрузке картин:', err);
+            if (!artworks.length) {
                 list.style.display = 'none';
                 if (noMsg) noMsg.style.display = 'block';
-            });
-    }
+                return;
+            }
 
-    // Первоначальная загрузка
-    loadArtworksWithFilters();
+            // 2) Параллельно для каждой картины запрашиваем её выставки
+            const exhibitionsPromises = artworks.map(a =>
+                fetch(`/api/v1/artworks/${a.id}/exhibitions`)
+                    .then(r => r.json())
+                    .then(json => (json.status === 'success' && Array.isArray(json.data.exhibitions))
+                        ? json.data.exhibitions
+                        : []
+                    )
+            );
 
-    // Обработчики поиска и фильтрации
-    const searchInput = document.getElementById('searchInput');
-    const yearFromInput = document.getElementById('yearFrom');
-    const yearToInput = document.getElementById('yearTo');
-    const clearYearFilterBtn = document.getElementById('clearYearFilter');
+            // 3) Когда все запросы завершатся — рендерим карточки
+            Promise.all(exhibitionsPromises)
+                .then(allExhibitions => {
+                    list.innerHTML = '';
+                    list.style.display = 'grid';
+                    if (noMsg) noMsg.style.display = 'none';
 
-    // Переменная для хранения таймера поиска
-    let searchTimer;
+                    artworks.forEach((a, idx) => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.style.display = 'flex';
+                        card.style.flexDirection = 'column';
+                        card.style.justifyContent = 'space-between';
 
-    // Обработчик поиска с задержкой
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(() => {
-                loadArtworksWithFilters();
-            }, 300);
+                        // HTML для списка выставок (если их несколько — разделяем запятыми)
+                        const exhibitions = allExhibitions[idx];
+                        const exhibitionsHTML = exhibitions.length
+                            ? exhibitions
+                                .map(e => `<a href="/exhibitions/${e.id}/page" class="text-blue-600 hover:underline">${e.title}</a>`)
+                                .join(', ')
+                            : '—';
+
+                        card.innerHTML = `
+              <div class="card-header" style="padding:1rem;">
+                <h4 class="text-lg font-semibold">${a.title}</h4>
+              </div>
+              ${a.image_path
+                            ? `<img src="${a.image_path}"
+                        class="artwork-image"
+                        style="width:100%; height:180px; object-fit:cover;"
+                        alt="${a.title}">`
+                            : ''}
+              <div class="card-body" style="padding:1rem; flex-grow:1;">
+                <p><strong>ID:</strong> ${a.id}</p>
+                <p><strong>Размеры:</strong> ${a.width} × ${a.height} см</p>
+                <p><strong>Год создания:</strong> ${a.creation_year}</p>
+                <p><strong>Автор:</strong> ${a.Author.surname} ${a.Author.first_name} ${a.Author.patronymic !== "null" ? a.Author.patronymic : ''}</p>
+                <p><strong>Стиль:</strong> ${a.Style.name}</p>
+                <p><strong>Жанр:</strong> ${a.Genre.name}</p>
+                <p class="mt-2"><strong>Описание:</strong> ${a.description || '—'}</p>
+                <p class="mt-2">
+                  <strong>Выставки:</strong> ${exhibitionsHTML}
+                </p>
+              </div>
+            `;
+                        list.appendChild(card);
+                    });
+                })
+                .catch(err => {
+                    console.error('Ошибка при загрузке выставок для картин:', err);
+                    list.style.display = 'none';
+                    if (noMsg) noMsg.style.display = 'block';
+                });
+        })
+        .catch(err => {
+            console.error('Ошибка при загрузке картин:', err);
+            list.style.display = 'none';
+            if (noMsg) noMsg.style.display = 'block';
         });
-    }
-
-    // Обработчики фильтров по году
-    if (yearFromInput) {
-        yearFromInput.addEventListener('input', loadArtworksWithFilters);
-    }
-    if (yearToInput) {
-        yearToInput.addEventListener('input', loadArtworksWithFilters);
-    }
-
-    // Обработчик кнопки очистки фильтра по году
-    if (clearYearFilterBtn) {
-        clearYearFilterBtn.addEventListener('click', function() {
-            if (yearFromInput) yearFromInput.value = '';
-            if (yearToInput) yearToInput.value = '';
-            loadArtworksWithFilters();
-        });
-    }
+});
+$(document).ready(function () {
+    // Загрузка произведений при загрузке страницы
+    loadArtworks();
 
     // Загрузка списков для выпадающих меню
     loadAuthors();
     loadStyles();
     loadGenres();
+
+    // Переменная для хранения таймера
+    let searchTimer;
+
+    // Обработчик поиска при вводе
+    $('#searchInput').on('input', function () {
+        const searchTerm = $(this).val();
+
+        // Очищаем предыдущий таймер
+        clearTimeout(searchTimer);
+
+        // Устанавливаем новый таймер
+        searchTimer = setTimeout(() => {
+            loadArtworks(searchTerm);
+        }, 300); // Задержка 300мс
+    });
+
+    // Обработчики фильтрации по году создания
+    $('#yearFrom, #yearTo').on('input', function() {
+        loadArtworks();
+    });
+
+    // Обработчик очистки фильтра по году
+    $('#clearYearFilter').on('click', function() {
+        $('#yearFrom').val('');
+        $('#yearTo').val('');
+        loadArtworks();
+    });
 
     // Обработчик клика по заголовкам таблицы
     $('.sortable').on('click', function() {
@@ -174,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
             artworkCurrentSort.direction = 'asc';
         }
 
-        loadArtworksWithFilters();
+        loadArtworks($('#searchInput').val());
     });
 
     // Обработчик добавления произведения
@@ -281,27 +252,131 @@ document.addEventListener('DOMContentLoaded', function () {
             $('body').removeClass('modal-open');
         }
     });
+});
 
-    // Обработчики для lightbox изображений картин
-    const lightbox = document.getElementById('image-lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
+// Функция загрузки произведений
+function loadArtworks(searchTerm = "") {
+    // Получаем значения фильтров по году
+    const yearFrom = $('#yearFrom').val();
+    const yearTo = $('#yearTo').val();
 
-    // Закрытие lightbox по клику на фон
-    if (lightbox) {
-        lightbox.addEventListener('click', function() {
-            lightbox.style.display = 'none';
-            lightboxImg.src = '';
-        });
+    // Формируем параметры запроса
+    const params = new URLSearchParams();
+    if (searchTerm) {
+        params.append('search', searchTerm.trim());
+    }
+    if (yearFrom) {
+        params.append('year_from', yearFrom);
+    }
+    if (yearTo) {
+        params.append('year_to', yearTo);
     }
 
-    // Закрытие lightbox по нажатию Esc
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && lightbox && lightbox.style.display === 'flex') {
-            lightbox.style.display = 'none';
-            lightboxImg.src = '';
+    const queryString = params.toString();
+    const url = `/api/v1/artworks${queryString ? `?${queryString}` : ""}`;
+
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(response) {
+            if (response.status === "success") {
+                const tbody = $('#artworksTableBody');
+                tbody.empty();
+
+                let artworks = response.data.artworks;
+                artworks.sort((a, b) => {
+                    let valueA, valueB;
+
+                    switch(artworkCurrentSort.column) {
+                        case 'id':
+                            valueA = a.id;
+                            valueB = b.id;
+                            break;
+                        case 'title':
+                            valueA = a.title.toLowerCase();
+                            valueB = b.title.toLowerCase();
+                            break;
+                        case 'author':
+                            valueA = `${a.Author.surname} ${a.Author.first_name} ${a.Author.patronymic || ''}`.toLowerCase();
+                            valueB = `${b.Author.surname} ${b.Author.first_name} ${b.Author.patronymic || ''}`.toLowerCase();
+                            break;
+                        case 'style':
+                            valueA = a.Style.name.toLowerCase();
+                            valueB = b.Style.name.toLowerCase();
+                            break;
+                        case 'genre':
+                            valueA = a.Genre.name.toLowerCase();
+                            valueB = b.Genre.name.toLowerCase();
+                            break;
+                        case 'creation_year':
+                            valueA = a.creation_year;
+                            valueB = b.creation_year;
+                            break;
+                        case 'dimensions':
+                            valueA = (a.width || 0) * (a.height || 0);
+                            valueB = (b.width || 0) * (b.height || 0);
+                            break;
+                        case 'exhibitions':
+                            valueA = a.statistics.total_exhibitions;
+                            valueB = b.statistics.total_exhibitions;
+                            break;
+                        default:
+                            valueA = a.id;
+                            valueB = b.id;
+                            break;
+                    }
+
+                    if (artworkCurrentSort.direction === 'asc') {
+                        return valueA > valueB ? 1 : -1;
+                    } else {
+                        return valueA < valueB ? 1 : -1;
+                    }
+                });
+
+                artworks.forEach(function(artwork) {
+                    // Преобразуем путь к изображению
+                    const imagePath = artwork.image_path.split('/').pop(); // Получаем только имя файла
+                    const imageUrl = `/media/${imagePath}`; // Путь относительно public
+
+                    const row = `
+            <tr>
+              <td>${artwork.id}</td>
+              <td class="artwork-image-cell">
+                <img src="${imageUrl}" 
+                     alt="${artwork.title}" 
+                     class="artwork-thumbnail"
+                     data-full-image="${imageUrl}">
+              </td>
+              <td>${artwork.title}</td>
+              <td>${artwork.Author.surname} ${artwork.Author.first_name} ${artwork.Author.patronymic}</td>
+              <td>${artwork.Style.name}</td>
+              <td>${artwork.Genre.name}</td>
+              <td>${artwork.creation_year || '-'}</td>
+              <td>${artwork.width ? artwork.width + '×' + artwork.height + ' см' : '-'}</td>
+              <td>${artwork.statistics.total_exhibitions}</td>
+              <td>
+                <button class="btn btn-sm btn-primary me-2" onclick="editArtwork(${artwork.id})">
+                  <i class="fas fa-edit"></i>Изменить
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${artwork.id})">
+                  <i class="fas fa-trash"></i>Удалить
+                </button>
+              </td>
+            </tr>
+          `;
+                    tbody.append(row);
+                });
+            }
+        },
+        error: function(xhr) {
+            if (xhr.status === 401) {
+                window.location.href = '/auth/login';
+            } else {
+                alert("Ошибка при загрузке произведений");
+            }
         }
     });
-});
+}
 
 // Функция загрузки авторов для выпадающего списка
 function loadAuthors() {
@@ -529,7 +604,7 @@ function addArtwork(formData) {
                 clearErrors();
                 $('#addArtworkForm')[0].reset();
                 $('#artworkImage').val('');
-                loadArtworksWithFilters();
+                loadArtworks();
             }
         },
         error: function(xhr) {
@@ -607,7 +682,7 @@ function updateArtwork(id, formData) {
                 $('#editArtworkForm')[0].reset();
                 $('#editArtworkImage').val('');
                 $('#currentImagePreview').empty();
-                loadArtworksWithFilters();
+                loadArtworks();
             }
         },
         error: function(xhr) {
@@ -635,7 +710,7 @@ function deleteArtwork(id) {
         success: function(response) {
             if (response.status === "success") {
                 $('#deleteArtworkModal').removeClass('active');
-                loadArtworksWithFilters();
+                loadArtworks();
             } else {
                 alert(response.message || "Ошибка при удалении произведения");
             }
@@ -672,15 +747,3 @@ function confirmDelete(id) {
 $('[data-modal="addArtworkModal"]').on('click', function() {
     clearErrors();
 });
-
-// Функция для открытия lightbox с изображением картины
-function openImageLightbox(imageSrc, imageTitle) {
-    const lightbox = document.getElementById('image-lightbox');
-    const lightboxImg = document.getElementById('lightbox-img');
-    
-    if (lightbox && lightboxImg) {
-        lightboxImg.src = imageSrc;
-        lightboxImg.alt = imageTitle || 'Изображение картины';
-        lightbox.style.display = 'flex';
-    }
-}

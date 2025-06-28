@@ -192,6 +192,34 @@ $(document).ready(function () {
     $('#imagePreviewModal').addClass('active');
     $('body').addClass('modal-open');
   });
+
+  // Лайтбокс для увеличения изображений (афиша и картины)
+  $('.content-container').on('click', '.exhibition-poster-detail, .artwork-thumbnail-detail', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const src = $(this).data('full-image') || $(this).attr('src');
+    $('#lightbox-img').attr('src', src);
+    $('#image-lightbox').css('display', 'flex');
+  });
+  
+  // Закрытие лайтбокса по клику на фон
+  $('#image-lightbox').on('click', function(e) {
+    if (e.target === this) {
+      $(this).css('display', 'none');
+      $('#lightbox-img').attr('src', '');
+    }
+  });
+  
+  // Закрытие лайтбокса по клавише Escape
+  $(document).on('keydown', function(e) {
+    if (e.key === 'Escape') {
+      $('#image-lightbox').css('display', 'none');
+      $('#lightbox-img').attr('src', '');
+      $('#imagePreviewModal').removeClass('active');
+      $('#previewImage').attr('src', '');
+      $('body').removeClass('modal-open');
+    }
+  });
 });
 
 // Функция загрузки выставок
@@ -798,32 +826,5 @@ $(document).on('keydown', function(e) {
     $('#previewImage').attr('src', '');
     $('body').removeClass('modal-open');
   }
-});
-
-document.addEventListener('DOMContentLoaded', function () {
-  const lightbox = document.getElementById('image-lightbox');
-  const lightboxImg = document.getElementById('lightbox-img');
-
-  // Универсальный обработчик для изображений афиши и картин
-  document.querySelector('.content-container').addEventListener('click', function(e) {
-    const img = e.target.closest('.exhibition-poster, .artwork-thumbnail');
-    if (!img) return;
-
-    const src = img.getAttribute('data-full-image') || img.src;
-    lightboxImg.src = src;
-    lightbox.style.display = 'flex';
-  });
-
-  lightbox.addEventListener('click', function() {
-    lightbox.style.display = 'none';
-    lightboxImg.src = '';
-  });
-
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-      lightbox.style.display = 'none';
-      lightboxImg.src = '';
-    }
-  });
 });
 

@@ -1265,4 +1265,168 @@ main {
 
 .artwork-image:hover {
     opacity: 0.8;
+}
+
+/* Стили для страницы ошибок */
+.error-icon {
+    font-size: 5rem;
+    color: #dc3545;
+}
+
+.error-icon-404 {
+    color: #dc3545;
+}
+
+.error-icon-403 {
+    color: #dc3545;
+}
+
+.error-icon-default {
+    color: #dc3545;
+}
+
+.error-title {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.error-message {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.error-code {
+    text-align: center;
+    color: #666;
+}
+
+.error-details {
+    margin-top: 2rem;
+}
+
+.error-details h6 {
+    margin-bottom: 1rem;
+}
+
+.error-stack {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.error-actions {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.error-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* Стили для страницы выставки */
+.exhibition-detail-card {
+    max-width: 900px;
+    margin: 2rem auto;
+    display: flex;
+    gap: 2rem;
+    align-items: stretch;
+}
+
+.exhibition-poster-detail {
+    width: 260px;
+    height: 340px;
+    object-fit: cover;
+    display: block;
+    border-radius: 8px 0 0 8px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.exhibition-poster-detail:hover {
+    opacity: 0.8;
+}
+
+.exhibition-info-detail {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.exhibition-title {
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+}
+
+.exhibition-ticket-form {
+    padding-top: 1rem;
+}
+
+.exhibition-no-tickets {
+    padding: 1rem;
+    color: #dc3545;
+}
+
+.exhibition-artworks-card {
+    max-width: 900px;
+    margin: 2rem auto;
+}
+
+.artwork-card-detail {
+    background: #fafbfc;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.artwork-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.artwork-author {
+    font-size: 0.95em;
+    color: #555;
+    margin-bottom: 0.5rem;
+}
+
+.artwork-thumbnail-detail {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: opacity 0.2s ease;
+}
+
+.artwork-thumbnail-detail:hover {
+    opacity: 0.8;
+}
+
+/* Стили для лайтбокса */
+.image-lightbox {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.lightbox-img {
+    max-width: 90%;
+    max-height: 90%;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
 } 

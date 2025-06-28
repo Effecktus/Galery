@@ -5,46 +5,29 @@
         <h4><%= title %></h4>
       </div>
       <div class="card-body">
-        <div style="text-align: center; margin-bottom: 2rem">
+        <div class="error-icon">
           <% if (error.status === 404) { %>
-          <i
-            class="fas fa-exclamation-circle"
-            style="font-size: 5rem; color: #dc3545"
-          ></i>
+          <i class="fas fa-exclamation-circle error-icon-404"></i>
           <% } else if (error.status === 403) { %>
-          <i class="fas fa-lock" style="font-size: 5rem; color: #dc3545"></i>
+          <i class="fas fa-lock error-icon-403"></i>
           <% } else { %>
-          <i
-            class="fas fa-exclamation-triangle"
-            style="font-size: 5rem; color: #dc3545"
-          ></i>
+          <i class="fas fa-exclamation-triangle error-icon-default"></i>
           <% } %>
         </div>
 
-        <h5 style="text-align: center; margin-bottom: 2rem"><%= message %></h5>
+        <h5 class="error-title"><%= message %></h5>
 
         <% if (error.status) { %>
-        <p style="text-align: center; color: #666">
-          Код ошибки: <%= error.status %>
-        </p>
+        <p class="error-code">Код ошибки: <%= error.status %></p>
         <% } %> <% if (process.env.NODE_ENV === 'development' && error.stack) {
         %>
-        <div style="margin-top: 2rem">
+        <div class="error-details">
           <h6>Детали ошибки (только для разработки):</h6>
-          <pre
-            style="
-              background-color: #f8f9fa;
-              padding: 1rem;
-              border-radius: 4px;
-              overflow-x: auto;
-            "
-          >
-<%= error.stack %></pre
-          >
+          <pre class="error-stack"><%= error.stack %></pre>
         </div>
         <% } %>
 
-        <div style="text-align: center; margin-top: 2rem">
+        <div class="error-actions">
           <% if (user && user.role === 'admin') { %>
           <a href="/admin" class="btn btn-primary">
             <i class="fas fa-tachometer-alt"></i> Вернуться на главную

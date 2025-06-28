@@ -4,99 +4,6 @@ let artworkCurrentSort = {
     direction: 'asc'
 };
 
-document.addEventListener('DOMContentLoaded', function () {
-    const list = document.getElementById('artworks-list');
-    const noMsg = document.getElementById('no-artworks-message');
-    if (!list) return;
-
-    list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;">Загрузка...</div>';
-    list.style.display = 'grid';
-    if (noMsg) noMsg.style.display = 'none';
-
-    // 1) Сначала получаем все картины
-    fetch('/api/v1/artworks')
-        .then(res => res.json())
-        .then(artJson => {
-            const artworks = (artJson.status === 'success' && Array.isArray(artJson.data.artworks))
-                ? artJson.data.artworks
-                : [];
-
-            if (!artworks.length) {
-                list.style.display = 'none';
-                if (noMsg) noMsg.style.display = 'block';
-                return;
-            }
-
-            // 2) Параллельно для каждой картины запрашиваем её выставки
-            const exhibitionsPromises = artworks.map(a =>
-                fetch(`/api/v1/artworks/${a.id}/exhibitions`)
-                    .then(r => r.json())
-                    .then(json => (json.status === 'success' && Array.isArray(json.data.exhibitions))
-                        ? json.data.exhibitions
-                        : []
-                    )
-            );
-
-            // 3) Когда все запросы завершатся — рендерим карточки
-            Promise.all(exhibitionsPromises)
-                .then(allExhibitions => {
-                    list.innerHTML = '';
-                    list.style.display = 'grid';
-                    if (noMsg) noMsg.style.display = 'none';
-
-                    artworks.forEach((a, idx) => {
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        card.style.display = 'flex';
-                        card.style.flexDirection = 'column';
-                        card.style.justifyContent = 'space-between';
-
-                        // HTML для списка выставок (если их несколько — разделяем запятыми)
-                        const exhibitions = allExhibitions[idx];
-                        const exhibitionsHTML = exhibitions.length
-                            ? exhibitions
-                                .map(e => `<a href="/exhibitions/${e.id}/page" class="text-blue-600 hover:underline">${e.title}</a>`)
-                                .join(', ')
-                            : '—';
-
-                        card.innerHTML = `
-              <div class="card-header" style="padding:1rem;">
-                <h4 class="text-lg font-semibold">${a.title}</h4>
-              </div>
-              ${a.image_path
-                            ? `<img src="${a.image_path}"
-                        class="artwork-image"
-                        style="width:100%; height:180px; object-fit:cover;"
-                        alt="${a.title}">`
-                            : ''}
-              <div class="card-body" style="padding:1rem; flex-grow:1;">
-                <p><strong>ID:</strong> ${a.id}</p>
-                <p><strong>Размеры:</strong> ${a.width} × ${a.height} см</p>
-                <p><strong>Год создания:</strong> ${a.creation_year}</p>
-                <p><strong>Автор:</strong> ${a.Author.surname} ${a.Author.first_name} ${a.Author.patronymic !== "null" ? a.Author.patronymic : ''}</p>
-                <p><strong>Стиль:</strong> ${a.Style.name}</p>
-                <p><strong>Жанр:</strong> ${a.Genre.name}</p>
-                <p class="mt-2"><strong>Описание:</strong> ${a.description || '—'}</p>
-                <p class="mt-2">
-                  <strong>Выставки:</strong> ${exhibitionsHTML}
-                </p>
-              </div>
-            `;
-                        list.appendChild(card);
-                    });
-                })
-                .catch(err => {
-                    console.error('Ошибка при загрузке выставок для картин:', err);
-                    list.style.display = 'none';
-                    if (noMsg) noMsg.style.display = 'block';
-                });
-        })
-        .catch(err => {
-            console.error('Ошибка при загрузке картин:', err);
-            list.style.display = 'none';
-            if (noMsg) noMsg.style.display = 'block';
-        });
-});
 $(document).ready(function () {
     // Загрузка произведений при загрузке страницы
     loadArtworks();
@@ -252,7 +159,121 @@ $(document).ready(function () {
             $('body').removeClass('modal-open');
         }
     });
+
+    // Добавляем очистку ошибок при открытии модальных окон
+    $('[data-modal="addArtworkModal"]').on('click', function() {
+        clearErrors();
+    });
+
+    // Загрузка публичного списка произведений (если есть)
+    loadPublicArtworks();
 });
+
+// Функция загрузки публичного списка произведений
+function loadPublicArtworks() {
+    const $list = $('#artworks-list');
+    const $noMsg = $('#no-artworks-message');
+    
+    if (!$list.length) return;
+
+    $list.html('<div style="grid-column:1/-1;text-align:center;padding:2rem;">Загрузка...</div>');
+    $list.css('display', 'grid');
+    if ($noMsg.length) $noMsg.hide();
+
+    // 1) Сначала получаем все картины
+    $.ajax({
+        url: '/api/v1/artworks',
+        method: 'GET',
+        success: function(artJson) {
+            const artworks = (artJson.status === 'success' && Array.isArray(artJson.data.artworks))
+                ? artJson.data.artworks
+                : [];
+
+            if (!artworks.length) {
+                $list.hide();
+                if ($noMsg.length) $noMsg.show();
+                return;
+            }
+
+            // 2) Параллельно для каждой картины запрашиваем её выставки
+            const exhibitionsPromises = artworks.map(function(a) {
+                return $.ajax({
+                    url: `/api/v1/artworks/${a.id}/exhibitions`,
+                    method: 'GET'
+                }).then(function(r) {
+                    return (r.status === 'success' && Array.isArray(r.data.exhibitions))
+                        ? r.data.exhibitions
+                        : [];
+                });
+            });
+
+            // 3) Когда все запросы завершатся — рендерим карточки
+            $.when.apply($, exhibitionsPromises)
+                .then(function() {
+                    const allExhibitions = Array.prototype.slice.call(arguments);
+                    
+                    $list.empty();
+                    $list.css('display', 'grid');
+                    if ($noMsg.length) $noMsg.hide();
+
+                    artworks.forEach(function(a, idx) {
+                        const $card = $('<div>').addClass('card').css({
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between'
+                        });
+
+                        // HTML для списка выставок (если их несколько — разделяем запятыми)
+                        const exhibitions = allExhibitions[idx];
+                        const exhibitionsHTML = exhibitions.length
+                            ? exhibitions
+                                .map(function(e) {
+                                    return `<a href="/exhibitions/${e.id}/page" class="text-blue-600 hover:underline">${e.title}</a>`;
+                                })
+                                .join(', ')
+                            : '—';
+
+                        const cardHTML = `
+                            <div class="card-header" style="padding:1rem;">
+                                <h4 class="text-lg font-semibold">${a.title}</h4>
+                            </div>
+                            ${a.image_path
+                                ? `<img src="${a.image_path}"
+                                    class="artwork-image"
+                                    style="width:100%; height:180px; object-fit:cover;"
+                                    alt="${a.title}">`
+                                : ''}
+                            <div class="card-body" style="padding:1rem; flex-grow:1;">
+                                <p><strong>ID:</strong> ${a.id}</p>
+                                <p><strong>Размеры:</strong> ${a.width} × ${a.height} см</p>
+                                <p><strong>Год создания:</strong> ${a.creation_year}</p>
+                                <p><strong>Автор:</strong> ${a.Author.surname} ${a.Author.first_name} ${a.Author.patronymic !== "null" ? a.Author.patronymic : ''}</p>
+                                <p><strong>Стиль:</strong> ${a.Style.name}</p>
+                                <p><strong>Жанр:</strong> ${a.Genre.name}</p>
+                                <p class="mt-2"><strong>Описание:</strong> ${a.description || '—'}</p>
+                                <p class="mt-2">
+                                    <strong>Выставки:</strong> ${exhibitionsHTML}
+                                </p>
+                            </div>
+                        `;
+                        
+                        $card.html(cardHTML);
+                        $list.append($card);
+                    });
+                })
+                .fail(function(err) {
+                    console.error('Ошибка при загрузке выставок для картин:', err);
+                    $list.hide();
+                    if ($noMsg.length) $noMsg.show();
+                });
+        },
+        error: function(err) {
+            console.error('Ошибка при загрузке картин:', err);
+            $list.hide();
+            if ($noMsg.length) $noMsg.show();
+        }
+    });
+}
 
 // Функция загрузки произведений
 function loadArtworks(searchTerm = "") {
@@ -280,11 +301,11 @@ function loadArtworks(searchTerm = "") {
         method: 'GET',
         success: function(response) {
             if (response.status === "success") {
-                const tbody = $('#artworksTableBody');
-                tbody.empty();
+                const $tbody = $('#artworksTableBody');
+                $tbody.empty();
 
                 let artworks = response.data.artworks;
-                artworks.sort((a, b) => {
+                artworks.sort(function(a, b) {
                     let valueA, valueB;
 
                     switch(artworkCurrentSort.column) {
@@ -339,32 +360,32 @@ function loadArtworks(searchTerm = "") {
                     const imageUrl = `/media/${imagePath}`; // Путь относительно public
 
                     const row = `
-            <tr>
-              <td>${artwork.id}</td>
-              <td class="artwork-image-cell">
-                <img src="${imageUrl}" 
-                     alt="${artwork.title}" 
-                     class="artwork-thumbnail"
-                     data-full-image="${imageUrl}">
-              </td>
-              <td>${artwork.title}</td>
-              <td>${artwork.Author.surname} ${artwork.Author.first_name} ${artwork.Author.patronymic}</td>
-              <td>${artwork.Style.name}</td>
-              <td>${artwork.Genre.name}</td>
-              <td>${artwork.creation_year || '-'}</td>
-              <td>${artwork.width ? artwork.width + '×' + artwork.height + ' см' : '-'}</td>
-              <td>${artwork.statistics.total_exhibitions}</td>
-              <td>
-                <button class="btn btn-sm btn-primary me-2" onclick="editArtwork(${artwork.id})">
-                  <i class="fas fa-edit"></i>Изменить
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${artwork.id})">
-                  <i class="fas fa-trash"></i>Удалить
-                </button>
-              </td>
-            </tr>
-          `;
-                    tbody.append(row);
+                        <tr>
+                            <td>${artwork.id}</td>
+                            <td class="artwork-image-cell">
+                                <img src="${imageUrl}" 
+                                     alt="${artwork.title}" 
+                                     class="artwork-thumbnail"
+                                     data-full-image="${imageUrl}">
+                            </td>
+                            <td>${artwork.title}</td>
+                            <td>${artwork.Author.surname} ${artwork.Author.first_name} ${artwork.Author.patronymic}</td>
+                            <td>${artwork.Style.name}</td>
+                            <td>${artwork.Genre.name}</td>
+                            <td>${artwork.creation_year || '-'}</td>
+                            <td>${artwork.width ? artwork.width + '×' + artwork.height + ' см' : '-'}</td>
+                            <td>${artwork.statistics.total_exhibitions}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary me-2" onclick="editArtwork(${artwork.id})">
+                                    <i class="fas fa-edit"></i>Изменить
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="confirmDelete(${artwork.id})">
+                                    <i class="fas fa-trash"></i>Удалить
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    $tbody.append(row);
                 });
             }
         },
@@ -386,12 +407,12 @@ function loadAuthors() {
         success: function(response) {
             if (response.status === "success") {
                 const authors = response.data.authors;
-                const authorSelects = $('#artworkAuthor, #editArtworkAuthor');
+                const $authorSelects = $('#artworkAuthor, #editArtworkAuthor');
 
-                authorSelects.empty();
+                $authorSelects.empty();
                 authors.forEach(function(author) {
                     const option = `<option value="${author.id}">${author.surname} ${author.first_name} ${author.patronymic !== null ? author.patronymic : ''}</option>`;
-                    authorSelects.append(option);
+                    $authorSelects.append(option);
                 });
             }
         }
@@ -406,12 +427,12 @@ function loadStyles() {
         success: function(response) {
             if (response.status === "success") {
                 const styles = response.data.styles;
-                const styleSelects = $('#artworkStyle, #editArtworkStyle');
+                const $styleSelects = $('#artworkStyle, #editArtworkStyle');
 
-                styleSelects.empty();
+                $styleSelects.empty();
                 styles.forEach(function(style) {
                     const option = `<option value="${style.id}">${style.name}</option>`;
-                    styleSelects.append(option);
+                    $styleSelects.append(option);
                 });
             }
         }
@@ -426,12 +447,12 @@ function loadGenres() {
         success: function(response) {
             if (response.status === "success") {
                 const genres = response.data.genres;
-                const genreSelects = $('#artworkGenre, #editArtworkGenre');
+                const $genreSelects = $('#artworkGenre, #editArtworkGenre');
 
-                genreSelects.empty();
+                $genreSelects.empty();
                 genres.forEach(function(genre) {
                     const option = `<option value="${genre.id}">${genre.name}</option>`;
-                    genreSelects.append(option);
+                    $genreSelects.append(option);
                 });
             }
         }
@@ -449,11 +470,11 @@ function clearErrors() {
 function showErrors(errors) {
     clearErrors();
     if (errors && errors.length > 0) {
-        errors.forEach(error => {
+        errors.forEach(function(error) {
             const field = error.field;
             const message = error.message;
-            const formGroup = $(`#${field}`).closest('.form-group');
-            formGroup.addClass('error');
+            const $formGroup = $(`#${field}`).closest('.form-group');
+            $formGroup.addClass('error');
             $(`#${field}`).addClass('error');
             $(`#${field}Error`).text(message);
         });
@@ -650,8 +671,8 @@ function editArtwork(id) {
 
                 // Отображаем текущее изображение
                 const previewHtml = `
-          <img src="${imageUrl}" alt="${artwork.title}" style="max-width: 100%;">
-        `;
+                    <img src="${imageUrl}" alt="${artwork.title}" style="max-width: 100%;">
+                `;
                 $('#currentImagePreview').html(previewHtml);
 
                 $('#editArtworkModal').addClass('active');
@@ -722,14 +743,16 @@ function deleteArtwork(id) {
                 const response = xhr.responseJSON;
                 if (response.data && response.data.exhibitions) {
                     const exhibitionsList = response.data.exhibitions
-                        .map(ex => `"${ex.title}"`)
+                        .map(function(ex) {
+                            return `"${ex.title}"`;
+                        })
                         .join(', ');
                     alert(`Невозможно удалить произведение: оно участвует в выставках: ${exhibitionsList}`);
                 } else {
                     alert(response.message || "Невозможно удалить произведение");
                 }
             } else if (xhr.status === 404) {
-                alert("Произв   едение не найдено");
+                alert("Произведение не найдено");
             } else {
                 alert("Ошибка при удалении произведения");
             }
@@ -742,8 +765,3 @@ function confirmDelete(id) {
     $('#confirmDeleteBtn').data('artworkId', id);
     $('#deleteArtworkModal').addClass('active');
 }
-
-// Добавляем очистку ошибок при открытии модальных окон
-$('[data-modal="addArtworkModal"]').on('click', function() {
-    clearErrors();
-});

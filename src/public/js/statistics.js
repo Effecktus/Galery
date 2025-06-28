@@ -1,49 +1,48 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const startInput = document.getElementById('statStart');
-    const endInput   = document.getElementById('statEnd');
-    const btn        = document.getElementById('fetchStatsBtn');
-    const loading    = document.getElementById('statsLoading');
-    const content    = document.getElementById('statsContent');
-    const emptyMsg   = document.getElementById('statsEmpty');
-    const soldEl     = document.getElementById('ticketsSold');
-    const revenueEl  = document.getElementById('totalRevenue');
+$(document).ready(function() {
+    const $startInput = $('#statStart');
+    const $endInput   = $('#statEnd');
+    const $btn        = $('#fetchStatsBtn');
+    const $loading    = $('#statsLoading');
+    const $content    = $('#statsContent');
+    const $emptyMsg   = $('#statsEmpty');
+    const $soldEl     = $('#ticketsSold');
+    const $revenueEl  = $('#totalRevenue');
 
-    btn.addEventListener('click', () => {
-        const start = startInput.value;
-        const end   = endInput.value;
-        content.style.display = 'none';
-        emptyMsg.style.display = 'none';
-        loading.style.display = 'block';
+    $btn.on('click', function() {
+        const start = $startInput.val();
+        const end   = $endInput.val();
+        $content.hide();
+        $emptyMsg.hide();
+        $loading.show();
 
         const params = new URLSearchParams();
         if (start) params.append('start_date', start);
         if (end)   params.append('end_date', end);
 
-        fetch(`/api/v1/reports/tickets?${params}`)
-            .then(r => r.json())
-            .then(json => {
-                loading.style.display = 'none';
+        $.ajax({
+            url: `/api/v1/reports/tickets?${params}`,
+            method: 'GET',
+            dataType: 'json',
+            success: function(json) {
+                $loading.hide();
                 if (json.status === 'success') {
                     const { tickets_sold, revenue } = json.data;
-                    // Если оба = null или 0 — считаем, что нет данных
-                    if ((!tickets_sold && tickets_sold !== 0) ||
-                        (!revenue      && revenue !== 0)) {
-                        emptyMsg.style.display = 'block';
+                    if ((!tickets_sold && tickets_sold !== 0) || (!revenue && revenue !== 0)) {
+                        $emptyMsg.show();
                     } else {
-                        soldEl.textContent    = tickets_sold || 0;
-                        revenueEl.textContent = Number(revenue).toFixed(2);
-                        content.style.display = 'block';
+                        $soldEl.text(tickets_sold || 0);
+                        $revenueEl.text(Number(revenue).toFixed(2));
+                        $content.show();
                     }
                 } else {
-                    emptyMsg.textContent = json.message || 'Нет данных';
-                    emptyMsg.style.display = 'block';
+                    $emptyMsg.text(json.message || 'Нет данных').show();
                 }
-            })
-            .catch(err => {
+            },
+            error: function(err) {
                 console.error('Ошибка при загрузке статистики:', err);
-                loading.style.display = 'none';
-                emptyMsg.textContent = 'Ошибка при загрузке';
-                emptyMsg.style.display = 'block';
-            });
+                $loading.hide();
+                $emptyMsg.text('Ошибка при загрузке').show();
+            }
+        });
     });
 });

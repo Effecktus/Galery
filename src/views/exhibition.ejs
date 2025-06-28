@@ -1,44 +1,19 @@
 <main class="main-content">
   <div class="content-container">
-    <div
-      class="card exhibition-flex-card"
-      style="
-        max-width: 900px;
-        margin: 2rem auto;
-        display: flex;
-        gap: 2rem;
-        align-items: stretch;
-      "
-    >
+    <div class="card exhibition-detail-card">
       <% if (exhibition.poster_path) { %>
       <div class="exhibition-poster-col">
         <img
           src="<%= exhibition.poster_path %>"
-          class="exhibition-poster"
-          style="
-            width: 260px;
-            height: 340px;
-            object-fit: cover;
-            display: block;
-            border-radius: 8px 0 0 8px;
-          "
+          class="exhibition-poster-detail"
+          data-full-image="<%= exhibition.poster_path %>"
           alt="Афиша выставки"
         />
       </div>
       <% } %>
-      <div
-        class="exhibition-info-col"
-        style="
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-        "
-      >
+      <div class="exhibition-info-detail">
         <div>
-          <h2 style="margin-top: 0; margin-bottom: 1.2rem">
-            <%= exhibition.title %>
-          </h2>
+          <h2 class="exhibition-title"><%= exhibition.title %></h2>
           <p><strong>Место:</strong> <%= exhibition.location || '-' %></p>
           <p><strong>Описание:</strong> <%= exhibition.description || '-' %></p>
           <p>
@@ -81,7 +56,7 @@
           action="/api/v1/tickets"
           method="POST"
           data-ajax="true"
-          style="padding-top: 1rem"
+          class="exhibition-ticket-form"
         >
           <input
             type="hidden"
@@ -105,28 +80,18 @@
         </form>
         <% } else if (user && user.role === 'user' &&
         exhibition.remaining_tickets === 0) { %>
-        <div style="padding: 1rem; color: #dc3545">Билеты закончились</div>
+        <div class="exhibition-no-tickets">Билеты закончились</div>
         <% } %>
       </div>
     </div>
-    <div class="card" style="max-width: 900px; margin: 2rem auto">
+    <div class="card exhibition-artworks-card">
       <div class="card-header"><h3>Работы на выставке</h3></div>
       <div class="card-body">
         <div class="grid grid-3">
           <% exhibition.Artworks.forEach(function(art) { %>
-          <div
-            class="artwork-card"
-            style="
-              background: #fafbfc;
-              border-radius: 8px;
-              padding: 1rem;
-              text-align: center;
-            "
-          >
-            <div style="font-weight: 600; margin-bottom: 0.5rem">
-              <%= art.title %>
-            </div>
-            <div style="font-size: 0.95em; color: #555; margin-bottom: 0.5rem">
+          <div class="artwork-card-detail">
+            <div class="artwork-title"><%= art.title %></div>
+            <div class="artwork-author">
               <%= art.Author ? art.Author.surname + ' ' + art.Author.first_name
               + (art.Author.patronymic ? ' ' + art.Author.patronymic : '') : '-'
               %>
@@ -134,14 +99,7 @@
             <% if (art.image_path) { %>
             <img
               src="<%= art.image_path %>"
-              class="artwork-thumbnail"
-              style="
-                width: 100px;
-                height: 100px;
-                object-fit: cover;
-                cursor: pointer;
-                border-radius: 4px;
-              "
+              class="artwork-thumbnail-detail"
               data-full-image="<%= art.image_path %>"
               alt="<%= art.title %>"
             />
@@ -153,20 +111,13 @@
     </div>
   </div>
 </main>
-<div id="image-lightbox" style="
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.8);
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-">
-  <img id="lightbox-img" src="" alt="Увеличенное изображение" style="
-    max-width: 90%;
-    max-height: 90%;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  ">
+<div id="image-lightbox" class="image-lightbox">
+  <img
+    id="lightbox-img"
+    class="lightbox-img"
+    src=""
+    alt="Увеличенное изображение"
+  />
 </div>
 <script src="/js/exhibition.js"></script>
 <script>

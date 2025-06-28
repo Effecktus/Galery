@@ -88,7 +88,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                     ? `<img src="${a.image_path}"
                             class="artwork-image"
                             style="width:100%; height:180px; object-fit:cover;"
-                            alt="${a.title}">`
+                            alt="${a.title}"
+                            onclick="openImageLightbox('${a.image_path}', '${a.title}')">`
                                     : ''}
                   <div class="card-body">
                     <p><strong>Размеры:</strong> ${a.width} × ${a.height} см</p>
@@ -278,6 +279,26 @@ document.addEventListener('DOMContentLoaded', function () {
             $('#imagePreviewModal').removeClass('active');
             $('#previewImage').attr('src', '');
             $('body').removeClass('modal-open');
+        }
+    });
+
+    // Обработчики для lightbox изображений картин
+    const lightbox = document.getElementById('image-lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+
+    // Закрытие lightbox по клику на фон
+    if (lightbox) {
+        lightbox.addEventListener('click', function() {
+            lightbox.style.display = 'none';
+            lightboxImg.src = '';
+        });
+    }
+
+    // Закрытие lightbox по нажатию Esc
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && lightbox && lightbox.style.display === 'flex') {
+            lightbox.style.display = 'none';
+            lightboxImg.src = '';
         }
     });
 });
@@ -651,3 +672,15 @@ function confirmDelete(id) {
 $('[data-modal="addArtworkModal"]').on('click', function() {
     clearErrors();
 });
+
+// Функция для открытия lightbox с изображением картины
+function openImageLightbox(imageSrc, imageTitle) {
+    const lightbox = document.getElementById('image-lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    
+    if (lightbox && lightboxImg) {
+        lightboxImg.src = imageSrc;
+        lightboxImg.alt = imageTitle || 'Изображение картины';
+        lightbox.style.display = 'flex';
+    }
+}

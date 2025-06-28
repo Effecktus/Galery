@@ -1,21 +1,40 @@
 <main class="main-content">
-    <div class="content-container">
-        <h1 class="font-bold mb-6">Мои билеты</h1>
+  <div class="content-container">
+    <h1 class="font-bold mb-6">Мои билеты</h1>
 
-        <div
-                id="tickets-list"
-                class="grid grid-3"
-                style="margin-top: 2rem;"
-        ></div>
+    <div id="tickets-list" class="grid grid-3" style="margin-top: 2rem"></div>
 
-        <p
-                id="no-tickets-message"
-                class="text-center text-gray-600 mt-8"
-                style="display:none;"
-        >
-            У вас пока нет купленных билетов.
-        </p>
-    </div>
+    <p
+      id="no-tickets-message"
+      class="text-center text-gray-600 mt-8"
+      style="display: none"
+    >
+      У вас пока нет купленных билетов.
+    </p>
+  </div>
 </main>
+
+<!-- Модальное окно подтверждения отмены билета -->
+<div id="cancel-ticket-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-body">
+      <p style="text-align: center; font-size: 1.1rem; margin-bottom: 2rem">
+        Вы уверены, что хотите отменить билет?
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        id="cancel-confirmation-btn"
+      >
+        Нет
+      </button>
+      <button type="button" class="btn btn-danger" id="confirm-cancel-btn">
+        Да
+      </button>
+    </div>
+  </div>
+</div>
 
 <script src="/js/tickets.js"></script>

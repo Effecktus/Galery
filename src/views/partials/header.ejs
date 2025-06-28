@@ -1,48 +1,51 @@
 <header class="site-header">
-    <div class="header-container">
-        <a
-                class="site-logo"
-                href="<% if (locals.user && user.role === 'admin') { %>/admin<% } else { %>/<% } %>"
-        >Художественная галерея</a
-        >
-        <button class="menu-toggle" type="button" aria-label="Toggle navigation">
-            <span class="menu-icon"></span>
-        </button>
-        <nav class="main-nav">
-            <ul class="nav-list">
-                <% if (locals.user && user.role === 'user') { %>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/artworks">Картины</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/tickets">Билеты</a>
-                    </li>
-                <% } %>
-            </ul>
-            <ul class="nav-list">
-                <% if (locals.user) { %> <% if (user.role === 'manager') { %>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/manager/statistics">Статистика</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/manager/exhibitions">Панель менеджера</a>
-                    </li>
-                <% } %>
-                <li class="nav-item">
-                    <a class="nav-link" href="/profile">Профиль</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#" data-action="logout">Выйти</a>
-                </li>
-                <% } else { %>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/auth/login">Войти</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/auth/register">Регистрация</a>
-                    </li>
-                <% } %>
-            </ul>
-        </nav>
-    </div>
+  <div class="header-container">
+    <a
+      class="site-logo"
+      href="<% if (locals.user && user.role === 'admin') { %>/admin<% } else { %>/<% } %>"
+      >Художественная галерея</a
+    >
+    <button class="menu-toggle" type="button" aria-label="Toggle navigation">
+      <span class="menu-icon"></span>
+    </button>
+    <nav class="main-nav">
+      <ul class="nav-list">
+        <% if (locals.user && user.role === 'user') { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/artworks">Картины</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/tickets">Билеты</a>
+        </li>
+        <% } %>
+      </ul>
+      <ul class="nav-list">
+        <% if (locals.user) { %> <% if (user.role === 'manager') { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/artworks">Картины</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/manager/statistics">Статистика</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/manager/exhibitions">Панель менеджера</a>
+        </li>
+        <% } %>
+        <li class="nav-item">
+          <a class="nav-link" href="/profile">Профиль</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-action="logout">Выйти</a>
+        </li>
+        <% } else { %>
+        <li class="nav-item">
+          <a class="nav-link" href="/auth/login">Войти</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/auth/register">Регистрация</a>
+        </li>
+        <% } %>
+      </ul>
+    </nav>
+  </div>
 </header>
